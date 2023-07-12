@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "facedetection.h": "c",
+        "post_process.h": "c"
+    }
+}
