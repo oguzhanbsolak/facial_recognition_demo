@@ -208,7 +208,8 @@ int font_1 = (int)&SansSerif16x16[0];
 
 void gpio_isr(void *cbdata)
 {
-	record_mode = !record_mode; //Toggle record mode
+	record_mode = 1; //Toggle record mode
+	PR_DEBUG("TOGGLED record_mode = %d\n", record_mode);
 }
 
 void gpio_isr_2(void *cbdata)
@@ -432,7 +433,10 @@ int main(void)
 			//printf("record mode\n");
 			
 			record();
-			//record_mode = 0;
+			// Delay for 0.5 seconds before continuing
+			//TODO: More elegant way to do this
+			MXC_Delay(MXC_DELAY_MSEC(500));
+			record_mode = 0;
 		}
 		else {
 

@@ -64,7 +64,7 @@
 
 
 /***** Definitions *****/
-#define TEST_ADDRESS (MXC_FLASH_MEM_BASE + MXC_FLASH_MEM_SIZE) - (1 * MXC_FLASH_PAGE_SIZE)
+#define DB_ADDRESS (MXC_FLASH_MEM_BASE + MXC_FLASH_MEM_SIZE) - (1 * MXC_FLASH_PAGE_SIZE)
 
 #define STATUS_ADDRESS (MXC_FLASH_MEM_BASE + MXC_FLASH_MEM_SIZE) - (2 * MXC_FLASH_PAGE_SIZE)
 /*
@@ -78,14 +78,14 @@
 /*
 Example Flash Database :
         MAGICKEY
-        NNNNIIIL
         NNNNNNNN
+        NNNNIIIL        
         EEEEEEEE
         ........
         ........
         ........
-        NNNNIIIL
         NNNNNNNN
+        NNNNIIIL        
         EEEEEEEE
         ........
         N : Name of the person (6 bytes)
@@ -94,10 +94,22 @@ Example Flash Database :
         E : Embeddings of the person (L * 64 bytes)
 
 Example Status Field :
-        MAGICKEY
-        TTTTTTTT 
+        TTTTTTTT
+        CCCCCCCC 
         T : Total number of people in the database (32 bits)
+        C : Total embeddings count in the database (32 bits)
 */
+
+struct person
+{
+    char name[6];
+    uint32_t id; 
+    uint32_t embeddings_count;
+    uint32_t db_embeddings_count;
+};
+
+typedef struct person Person;
+
 
 /***** Globals *****/
 volatile uint32_t isr_cnt;
@@ -107,14 +119,99 @@ extern unsigned int touch_x, touch_y;
 extern volatile uint8_t face_detected;
 extern volatile uint8_t capture_key;
 extern volatile uint8_t record_mode;
-static const uint32_t kernels_3[] = KERNELS_3;
 static const uint32_t baseaddr[] = BASEADDR;
 
+/***** Prototypes *****/
+void get_status(Person *p);
+int update_status(Person *p);
+int update_info_field(Person *p);
+void FLC0_IRQHandler();
+int init_db();
+int init_status();
+int add_person(Person *p);
+void flash_to_cnn(Person *p);
+void setup_irqs();
 
 
 
 
-void FLC0_IRQHandler(void)
+
+
+void get_status(Person *p)
+{
+    uint32_t id;
+    uint32_t count;
+
+    MXC_FLC_Read(STATUS_ADDRESS, &id, 4);
+    if (id == 0xFFFFFFFF) { // Flash is empty
+        p->id = 1;
+        p->embeddings_count = 0;
+        p->db_embeddings_count = 0;
+        return;
+    }
+    
+
+    p->id = id + 1;
+
+    MXC_FLC_Read(STATUS_ADDRESS + 4, &count, 4);
+    p->embeddings_count = 0; // Initialize to 0 for every new person
+    p->db_embeddings_count = count;
+}
+
+int update_status(Person *p)
+{   
+    int err = 0;
+    err = init_status();
+        if (err) {
+        printf("Failed to initialize status", err);
+        return err; }
+    err = MXC_FLC_Write32(STATUS_ADDRESS, p->id);
+        if (err) {
+        printf("Failed to write status (ID)", err);
+        return err; } 
+    err = MXC_FLC_Write32(STATUS_ADDRESS + 4, p->db_embeddings_count);
+        if (err) {
+        printf("Failed to write status (Embeddings count)", err);
+        return err; }
+    return err;
+}
+
+int update_info_field(Person *p)
+{   
+    int err = 0;
+
+    uint32_t first_info = 0x00000000;
+    uint32_t second_info = 0x00000000;   
+    uint32_t info_address;
+
+    /*
+    NNNNNNNN First info field
+    NNNNIIIL Second info field
+    */
+ 
+    info_address = (DB_ADDRESS + 4) + ((p->id - 1) * 4 * 2) + ((p->db_embeddings_count - p->embeddings_count) * 64); //TODO : Control total emb and emb in a more elegant way
+
+    first_info = (p->name[0] << 24) | (p->name[1] << 16) | (p->name[2] << 8) | (p->name[3]);
+
+
+
+    second_info = (p->name[4] << 24) | (p->name[5] << 16) | (p->id << 4) | (p->embeddings_count);
+
+    err = MXC_FLC_Write32(info_address, first_info);
+        if (err) {
+        printf("Failed to write status to 0x%x, %d, (First info)", info_address, err);
+        return err; }
+
+    err = MXC_FLC_Write32(info_address + 4, second_info);
+        if (err) {
+        printf("Failed to write status to 0x%x, %d, (Second info)", info_address + 4, err);
+        return err; }
+
+    return err;
+}
+
+
+void FLC0_IRQHandler()
 {
     uint32_t temp;
     isr_cnt++;
@@ -138,35 +235,34 @@ int init_db()
 {
 
 int err = 0;
- printf("Erasing page 64 of flash (addr 0x%x)...\n", TEST_ADDRESS);
-            err = MXC_FLC_PageErase(TEST_ADDRESS);
+ printf("Erasing page 64 of flash (addr 0x%x)...\n", DB_ADDRESS);
+            err = MXC_FLC_PageErase(DB_ADDRESS);
             if (err) {
-            printf("Failed with error code %i\n", TEST_ADDRESS, err);
+            printf("Failed with error code %i\n", DB_ADDRESS, err);
             return err; }
 
             PR_DEBUG("Magic Value not matched, Initializing flash\n");
-            err = MXC_FLC_Write32(TEST_ADDRESS, MAGIC);
+            err = MXC_FLC_Write32(DB_ADDRESS, MAGIC);
 
             if (err) {
-            printf("Failed to write magic value to 0x%x with error code %i!\n", TEST_ADDRESS, err);
-            return err;}
-
- printf("Erasing page 63 of flash (addr 0x%x)...\n", STATUS_ADDRESS);
-            err = MXC_FLC_PageErase(STATUS_ADDRESS);
-            if (err) {
-            printf("Failed with error code %i\n", STATUS_ADDRESS, err);
-            return err; }
-
-            PR_DEBUG("Magic Value not matched, Initializing flash\n");
-            err = MXC_FLC_Write32(STATUS_ADDRESS, MAGIC);
-
-            if (err) {
-            printf("Failed to write magic value to 0x%x with error code %i!\n", STATUS_ADDRESS, err);
+            printf("Failed to write magic value to 0x%x with error code %i!\n", DB_ADDRESS, err);
             return err;}
 
     return err;
 }
 
+int init_status()
+{
+    int err = 0;
+    printf("Erasing page 63 of flash (addr 0x%x)...\n", STATUS_ADDRESS);
+            err = MXC_FLC_PageErase(STATUS_ADDRESS);
+            if (err) {
+            printf("Failed with error code %i\n", STATUS_ADDRESS, err);
+            return err; }
+
+
+    return err;
+}
 
 
 //============================================================================
@@ -174,25 +270,33 @@ bool check_db()
 {   
     uint32_t magic_read = 0;
     //Check if database is empty
-    MXC_FLC_Read(TEST_ADDRESS, &magic_read, 4);
+    MXC_FLC_Read(DB_ADDRESS, &magic_read, 4);
     PR_DEBUG("Magic Value at address 0x%x \tRead: 0x%x\n",
-    TEST_ADDRESS, magic_read);
+    DB_ADDRESS, magic_read);
     
     return (magic_read == MAGIC);
 }
 
 //============================================================================
-int add_person()
+int add_person(Person *p)
 {
-    char dummy_db[8][6] = {"AAAAAA", "BBBBBB", "CCCCCC", "DDDDDD", "EEEEEE", "FFFFFF", "GGGGGG", "HHHHHH"};
     int err = 0;
+
+    face_detected = 0;
+
+    if (p->embeddings_count == 0) {
+        PR_DEBUG("Enter name: ");
+
+        scanf("%5s", p->name);
+        PR_DEBUG("Name entered: %s\n", p->name); //TODO:Get the name from TS
+    }   
+
 
 
 	while(!face_detected || !capture_key)
 		{	
 			face_detection();
-            if (!record_mode) //If record mode is off, return to main menu
-                return -1;
+
 			//face_detected = 0;
 		}
 
@@ -202,27 +306,59 @@ int add_person()
 
      PR_DEBUG("This is record\n");
 
+     //Calculate the write address 4 bytes for magic key, 8 bytes for each person, 64 bytes for each embedding
+    PR_DEBUG("p.id %d" , p->id);
+    PR_DEBUG("p.embeddings_count %d", p->embeddings_count);
+    PR_DEBUG("Total embeddings_count %d", p->db_embeddings_count); 
+    uint32_t write_address = (DB_ADDRESS + 4) + ((p->id - 1) * 4 * 2) + (p->db_embeddings_count * 64);
+
 
 
      for (int i = 0; i < 16; i++) {
 
-        PR_DEBUG("Writing buffer value 0x%x to address 0x%x...\n",  output_buffer[i], TEST_ADDRESS + ((i+1) * 4));
+        PR_DEBUG("Writing buffer value 0x%x to address 0x%x...\n",  output_buffer[i], write_address + ((i+2) * 4)); // 2 for the name and length field
+        
 
-        err = MXC_FLC_Write32(TEST_ADDRESS + ((i+1) * 4), output_buffer[i]);
+        err = MXC_FLC_Write32(write_address + ((i+2) * 4), output_buffer[i]);
 
         if (err) {
-        printf("Failed to write value to 0x%x with error code %i!\n", TEST_ADDRESS + ((i+1) * 4), err);
+        printf("Failed to write value to 0x%x with error code %i!\n", write_address + ((i+2) * 4), err);
         return err; }
     }
+    
 
-    return err;
+
+    flash_to_cnn(p); // Load a single embedding into CNN_3
+    p->embeddings_count += 1; // TODO: Check this later for add person, add embedding logic
+    p->db_embeddings_count += 1;
+
+    record_mode = 0;
+    PR_DEBUG("To continue to capture press P2.6, to return to main menu press P2.7\n");
+    while(!capture_key)
+		{	
+            if (record_mode){ //If record mode is off, return to main menu
+
+                err = update_info_field(p); //Update the information field
+
+                if (err) {
+                printf("Failed to update info field with error code %i!\n", err);
+                return err; }   
+
+                err = -1; // -1 is the exit code
+                return err;}
+		}
+
+    capture_key = 0;
+
+    err = add_person(p);
+
+    return err; //Never expect to reach here
 
 }
 
 //============================================================================
-void flash_to_cnn(int id)
+void flash_to_cnn(Person *p)
 {   
-    uint32_t data, val;
     volatile uint32_t *kernel_addr, *ptr;
     uint32_t readval = 0;
 
@@ -230,21 +366,25 @@ void flash_to_cnn(int id)
     uint32_t write_buffer[3];
     uint32_t emb_buffer[16];
     uint32_t emb;
+    uint32_t emb_addr;
 
-
-    int block_id = id / 9;
-    int block_offset = id % 9;
+    //Reload the latest emb
+    //TODO: Rethink this logic
+    int block_id = (p->db_embeddings_count) / 9;
+    int block_offset = (p->db_embeddings_count) % 9;
     int write_offset = 8 - block_offset; // reverse order for each block;
 
     PR_DEBUG("Block ID: %d\tBlock Offset: %d\tWrite Offset: %d\n", block_id, block_offset, write_offset);
+
+    emb_addr = (DB_ADDRESS + 4) + ((p->id) * 4 * 2) + (p->db_embeddings_count * 64); // 4 bytes for magic key, 8 bytes for each person, 64 bytes for each embedding
 
     
 
     //Read the emb from flash
     for (int i = 0; i < 16; i++) {
-        MXC_FLC_Read(TEST_ADDRESS + ((i+1) * 4), &readval, 4);
+        MXC_FLC_Read(emb_addr + i*4, &readval, 4);
         emb_buffer[i] = readval;
-        PR_DEBUG("Read value 0x%x from address 0x%x\n", readval, TEST_ADDRESS + ((i+1) * 4));
+        PR_DEBUG("Read value 0x%x from address 0x%x\n", readval, emb_addr + i* 4);
     }
 
     //Write the kernel to CNN
@@ -274,7 +414,7 @@ void flash_to_cnn(int id)
         }
         else if (write_offset == 1){
             kernel_buffer[1] = ((kernel_buffer[1] & 0x00FFFFFF) | emb);
-            PR_DEBUG("Kernel buffer 1: 0x%x\n", kernel_buffer[1]);
+            //PR_DEBUG("Kernel buffer 1: 0x%x\n", kernel_buffer[1]);
         }
         else if (write_offset == 2){
             kernel_buffer[1] = ((kernel_buffer[1] & 0xFF00FFFF) | (emb >> 8));
@@ -286,16 +426,16 @@ void flash_to_cnn(int id)
             kernel_buffer[1] = ((kernel_buffer[1] & 0xFFFFFF00) | (emb>> 24));
         }
         else if (write_offset == 5){
-            kernel_buffer[2] = ((kernel_buffer[1] & 0x00FFFFFF) | emb);
+            kernel_buffer[2] = ((kernel_buffer[2] & 0x00FFFFFF) | emb);
         }
         else if (write_offset == 6){
-            kernel_buffer[2] = ((kernel_buffer[1] & 0xFF00FFFF) | (emb >> 8));
+            kernel_buffer[2] = ((kernel_buffer[2] & 0xFF00FFFF) | (emb >> 8));
         }
         else if (write_offset == 7){
-            kernel_buffer[2] = ((kernel_buffer[1] & 0xFFFF00FF) | (emb >> 16));
+            kernel_buffer[2] = ((kernel_buffer[2] & 0xFFFF00FF) | (emb >> 16));
         }
         else if (write_offset == 8){
-            kernel_buffer[2] = ((kernel_buffer[1] & 0xFFFFFF00) | (emb >> 24));
+            kernel_buffer[2] = ((kernel_buffer[2] & 0xFFFFFF00) | (emb >> 24));
         }
 
 
@@ -329,83 +469,7 @@ void flash_to_cnn(int id)
 }
 
 
-//============================================================================
-void reload_cnn()
-{
-    volatile uint32_t *kernel_addr;
-
-    uint32_t readval = 0;
-    int dummy = 0;
-    int len = 0;
-
-    //just load one for now
-    
-    
-    PR_DEBUG("Kernel address: 0x%x\n", kernel_addr);
-    
-
-    for (uint32_t addr = TEST_ADDRESS+4; addr < TEST_ADDRESS + 17*4; addr += 4) {
-        kernel_addr = (volatile uint32_t *) baseaddr[dummy++];
-        *((volatile uint8_t *) ((uint32_t) kernel_addr | 1)) = 0x01; // Set address
-
-        MXC_FLC_Read(addr, &readval, 4);
-        //*kernel_addr = (readval) & 0xFF000000;
-        //*kernel_addr++ = 0x00000000;
-        len = 3;
-        while (len-- > 0)   
-        *kernel_addr++ = (readval << 24);
-
-        //PR_DEBUG("kernel_addr 0x%x", kernel_addr);
-        //PR_DEBUG("readval 0x%x", (readval) & 0xFF000000); 
-
-        kernel_addr = (volatile uint32_t *) baseaddr[dummy++];
-        *((volatile uint8_t *) ((uint32_t) kernel_addr | 1)) = 0x01; // Set address
-
-        //*kernel_addr = (readval << 8) & 0xFF000000;
-        len = 3;
-        while (len-- > 0)   
-        *kernel_addr++ = (readval << 16);
-        //PR_DEBUG("kernel_addr 0x%x", kernel_addr);
-        //PR_DEBUG("readval 0x%x", (readval << 8) & 0xFF000000); 
-
-        kernel_addr = (volatile uint32_t *) baseaddr[dummy++];
-        *((volatile uint8_t *) ((uint32_t) kernel_addr | 1)) = 0x01; // Set address
-
-        //*kernel_addr = (readval << 16) & 0xFF000000;
-        len = 3;
-        while (len-- > 0)   
-        *kernel_addr++ = (readval << 8);
-        //PR_DEBUG("kernel_addr 0x%x", kernel_addr);
-        //PR_DEBUG("readval 0x%x", (readval << 16) & 0xFF000000); 
-
-        kernel_addr = (volatile uint32_t *) baseaddr[dummy++];
-        *((volatile uint8_t *) ((uint32_t) kernel_addr | 1)) = 0x01; // Set address
-
-        //*kernel_addr = (readval << 24) & 0xFF000000;
-        len = 3;
-        while (len-- > 0)   
-        *kernel_addr++ = (readval);
-        //PR_DEBUG("kernel_addr 0x%x", kernel_addr);
-        //PR_DEBUG("readval 0x%x", (readval << 24) & 0xFF000000); 
-        
-        
-        /*
-        PR_DEBUG("Set Addr Pointer:%x \n", ((volatile uint8_t *) ((uint32_t) kernel_addr | 1)));
-        PR_DEBUG("Kernel address: 0x%x, Kernel value:%x\n", kernel_addr, *kernel_addr);
-        
-        PR_DEBUG("After `` Kernel address: 0x%x, Kernel value:%x\n", kernel_addr, *kernel_addr);
-        kernel_addr++;
-        PR_DEBUG("Emb at address 0x%x \tRead: 0x%x\n",
-                addr, readval); } */ }
-        
-        
-    
-
-}
-
-
-
-void setup_irqs(void)
+void setup_irqs()
 {
     /*
     All functions modifying flash contents are set to execute out of RAM
@@ -440,13 +504,14 @@ void setup_irqs(void)
     isr_cnt = 0;
 }
 
-int record(void)
+int record()
 {   
 
     // First capture a name from touchscreen
-    char name[20];
-    PR_DEBUG("Enter name: ");
+    
 
+    Person p;
+    Person *pptr = &p;
 
     setup_irqs(); // See notes in function definition
 
@@ -461,11 +526,10 @@ int record(void)
     //read database from flash and check magic value
 
     int err = 0;
-    uint32_t magic_read = 0;
     /*
-    err = MXC_FLC_PageErase(TEST_ADDRESS);
+    err = MXC_FLC_PageErase(DB_ADDRESS);
             if (err) {
-            printf("Failed with error code %i\n", TEST_ADDRESS, err);
+            printf("Failed with error code %i\n", DB_ADDRESS, err);
             return err; }*/
 
     
@@ -473,7 +537,9 @@ int record(void)
     {  
 
     PR_DEBUG("Magic Matched, Database found\n");
-   
+    //if magic value matches, get the latest ID from flash
+
+    
     }
 
     //if magic value does not match, initialize flash
@@ -483,7 +549,11 @@ int record(void)
            err = init_db();
            if (err) {
             printf("Failed to initialize database", err);
-            return err; }        
+            return err; }
+            err = init_status();
+            if (err) {
+            printf("Failed to initialize status", err);
+            return err; }          
            
         }
 
@@ -494,10 +564,20 @@ int record(void)
     //if name exists, ask user to enter a different name
     
     //if name does not exist, proceed to capture face
+    get_status(pptr);
+    PR_DEBUG("Latest ID: %d\n", pptr->id);
+    PR_DEBUG("Total embeddings: %d\n", pptr->db_embeddings_count);
 
-    err = add_person();
+    err = add_person(pptr);
     if (err == -1) { //TODO: change this to a way to exit to main menu
+            err = update_status(pptr);
+            if (err) {
+            printf("Failed to update status", err);
+            return err; }
             printf("Exiting to main menu", err);
+            // Re-enable the ICC
+            MXC_ICC_Enable(MXC_ICC0);
+            printf("Successfully verified test pattern!\n\n");
             return err; }
     else if (err != 0) {
             printf("Failed to add person", err);
@@ -512,9 +592,12 @@ int record(void)
      PR_DEBUG("This is record\n");
 
 
-    flash_to_cnn(17); // Load a single person's embeddings into CNN_3
+    
 
-    //reload_cnn();
+
+    //Update Status in flash
+    
+
     //cnn_verify_weights();
     //cnn_3_configure(); // Configure CNN_3 layers
 
@@ -535,9 +618,7 @@ int record(void)
     
 
 
-    // Re-enable the ICC
-    MXC_ICC_Enable(MXC_ICC0);
-        printf("Successfully verified test pattern!\n\n");
+    
         return err;
     
        

@@ -36,9 +36,7 @@
 
 #define EMBEDDING_SIZE 64
 
-int record(void);
+int record();
 
-/*reload weights from flash*/
-void reload_cnn();
 
 #endif // _RECORD_H_

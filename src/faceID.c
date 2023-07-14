@@ -76,8 +76,6 @@ static int font   = (int)&SansSerif16x16[0];
 static int box_x_offset = 0;
 static int box_y_offset = 0;
 
-static int8_t prev_decision = -2;
-static int8_t decision      = -2;
 uint8_t box[4]; // x1, y1, x2, y2
 volatile int32_t output_buffer[16];
 
@@ -273,7 +271,6 @@ static void run_cnn_2(int x_offset, int y_offset)
 {
     uint32_t imgLen;
     uint32_t w, h;
-    static uint32_t noface_count = 0;
     /* Get current time */
     uint32_t pass_time = 0;
     uint8_t* raw;
@@ -552,7 +549,7 @@ static void run_cnn_2(int x_offset, int y_offset)
 
 
 
-    uint32_t *ml_point =  ml_3_data32;
+    int32_t *ml_point =  ml_3_data32;
     int8_t max_emb = 0;
     int8_t max_emb_index = 0;
     char* name;
