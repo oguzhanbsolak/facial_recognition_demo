@@ -129,10 +129,80 @@ void FLC0_IRQHandler();
 int init_db();
 int init_status();
 int add_person(Person *p);
-void flash_to_cnn(Person *p);
+void flash_to_cnn(Person *p, uint32_t cnn_location);
 void setup_irqs();
+void read_db(Person *p);
+bool check_db();
 
 
+
+void read_db(Person *p)
+{   
+    // Description : Reads the database from flash and populates the Person structure, works in loop
+
+    uint32_t info_address;
+    uint32_t first_info;
+    uint32_t second_info;
+
+    info_address = (DB_ADDRESS + 4) + ((p->id - 1) * 4 * 2) + (p->db_embeddings_count * 64);
+
+    MXC_FLC_Read(info_address, &first_info, 4);
+    MXC_FLC_Read(info_address + 4, &second_info, 4);
+
+    p->name[0] = (first_info >> 24) & 0xFF;
+    p->name[1] = (first_info >> 16) & 0xFF;
+    p->name[2] = (first_info >> 8) & 0xFF;
+    p->name[3] = (first_info) & 0xFF;
+    p->name[4] = (second_info >> 24) & 0xFF;
+    p->name[5] = (second_info >> 16) & 0xFF;
+    p->id = (second_info >> 4) & 0xFFF;
+    p->embeddings_count = (second_info) & 0xF;
+        
+
+}
+
+
+void init_cnn_from_flash()
+{
+    uint32_t location = 0;
+    uint32_t counter = 0;
+
+    if(!check_db())
+    {
+        PR_DEBUG("No database found, skipping CNN database initialization\n");
+        return;
+    }
+    PR_DEBUG("Initializing CNN database from flash\n");
+    Person total;
+    Person *total_ptr = &total;
+    get_status(total_ptr);
+
+    Person p;
+    Person *pptr = &p;
+
+    pptr->id = 1;
+    pptr->embeddings_count = 0;
+    pptr->db_embeddings_count = 0;
+
+
+    
+    for (uint32_t i = 1; i < total_ptr->id; i++)
+    {
+        read_db(pptr); //Get the name, id and embeddings count of the person
+        PR_DEBUG("Reading person %s with id %d and embeddings count %d\n", pptr->name, pptr->id, pptr->embeddings_count);
+        counter = pptr->embeddings_count;
+        pptr->embeddings_count = 0;
+        for (uint32_t j = 0; j < counter; j++)
+        {
+            flash_to_cnn(pptr, location);
+            location += 1;
+            pptr->embeddings_count += 1;
+        }
+        pptr->db_embeddings_count = pptr->db_embeddings_count + counter;
+        pptr->id += 1;
+    }
+
+}
 
 
 
@@ -189,7 +259,7 @@ int update_info_field(Person *p)
     NNNNIIIL Second info field
     */
  
-    info_address = (DB_ADDRESS + 4) + ((p->id - 1) * 4 * 2) + ((p->db_embeddings_count - p->embeddings_count) * 64); //TODO : Control total emb and emb in a more elegant way
+    info_address = (DB_ADDRESS + 4) + ((p->id - 1) * 4 * 2) + (p->db_embeddings_count * 64); //TODO : Control total emb and emb in a more elegant way
 
     first_info = (p->name[0] << 24) | (p->name[1] << 16) | (p->name[2] << 8) | (p->name[3]);
 
@@ -310,7 +380,7 @@ int add_person(Person *p)
     PR_DEBUG("p.id %d" , p->id);
     PR_DEBUG("p.embeddings_count %d", p->embeddings_count);
     PR_DEBUG("Total embeddings_count %d", p->db_embeddings_count); 
-    uint32_t write_address = (DB_ADDRESS + 4) + ((p->id - 1) * 4 * 2) + (p->db_embeddings_count * 64);
+    uint32_t write_address = (DB_ADDRESS + 4) + ((p->id - 1) * 4 * 2) + ((p->embeddings_count + p->db_embeddings_count) * 64);
 
 
 
@@ -328,9 +398,9 @@ int add_person(Person *p)
     
 
 
-    flash_to_cnn(p); // Load a single embedding into CNN_3
+    flash_to_cnn(p, (p->embeddings_count + p->db_embeddings_count)); // Load a single embedding into CNN_3
     p->embeddings_count += 1; // TODO: Check this later for add person, add embedding logic
-    p->db_embeddings_count += 1;
+    //p->db_embeddings_count += 1;
 
     record_mode = 0;
     PR_DEBUG("To continue to capture press P2.6, to return to main menu press P2.7\n");
@@ -339,6 +409,8 @@ int add_person(Person *p)
             if (record_mode){ //If record mode is off, return to main menu
 
                 err = update_info_field(p); //Update the information field
+                
+                p->db_embeddings_count = p->db_embeddings_count + p->embeddings_count;
 
                 if (err) {
                 printf("Failed to update info field with error code %i!\n", err);
@@ -357,7 +429,7 @@ int add_person(Person *p)
 }
 
 //============================================================================
-void flash_to_cnn(Person *p)
+void flash_to_cnn(Person *p, uint32_t cnn_location)
 {   
     volatile uint32_t *kernel_addr, *ptr;
     uint32_t readval = 0;
@@ -370,13 +442,13 @@ void flash_to_cnn(Person *p)
 
     //Reload the latest emb
     //TODO: Rethink this logic
-    int block_id = (p->db_embeddings_count) / 9;
-    int block_offset = (p->db_embeddings_count) % 9;
+    int block_id = (cnn_location) / 9;
+    int block_offset = (cnn_location) % 9;
     int write_offset = 8 - block_offset; // reverse order for each block;
 
     PR_DEBUG("Block ID: %d\tBlock Offset: %d\tWrite Offset: %d\n", block_id, block_offset, write_offset);
 
-    emb_addr = (DB_ADDRESS + 4) + ((p->id) * 4 * 2) + (p->db_embeddings_count * 64); // 4 bytes for magic key, 8 bytes for each person, 64 bytes for each embedding
+    emb_addr = (DB_ADDRESS + 4) + ((p->id) * 4 * 2) + ((p->embeddings_count + p->db_embeddings_count) * 64); // 4 bytes for magic key, 8 bytes for each person, 64 bytes for each embedding
 
     
 

@@ -296,6 +296,8 @@ int main(void)
   	cnn_3_load_bias(); // Load bias data of CNN_3
   	cnn_3_configure(); // Configure CNN_3 layers
 
+	// Initialize Database from flash
+	init_cnn_from_flash();
 
 
     /* Initialize RTC */
