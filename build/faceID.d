@@ -37,50 +37,49 @@ C:/Users/obuyukso/Desktop/desktop_code/facial_recognition_ai87_mobilefacenet_112
  c:\maximsdk\tools\gnutools\10.3\arm-none-eabi\include\sys\stdio.h \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX78002/spi.h \
  c:\maximsdk\tools\gnutools\10.3\lib\gcc\arm-none-eabi\10.3.1\include\stdbool.h \
- C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX78002/mxc_assert.h \
- C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX78002/mxc_device.h \
- C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX78002/Include/max78002.h \
+ C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX78002/Include/spi_regs.h \
  c:\maximsdk\tools\gnutools\10.3\lib\gcc\arm-none-eabi\10.3.1\include\stdint.h \
  c:\maximsdk\tools\gnutools\10.3\arm-none-eabi\include\stdint.h \
  c:\maximsdk\tools\gnutools\10.3\arm-none-eabi\include\sys\_intsup.h \
- C:/MaximSDK/Libraries/CMSIS/5.9.0/Core/Include/core_cm4.h \
- C:/MaximSDK/Libraries/CMSIS/5.9.0/Core/Include/cmsis_version.h \
- C:/MaximSDK/Libraries/CMSIS/5.9.0/Core/Include/cmsis_compiler.h \
- C:/MaximSDK/Libraries/CMSIS/5.9.0/Core/Include/cmsis_gcc.h \
- C:/MaximSDK/Libraries/CMSIS/5.9.0/Core/Include/mpu_armv7.h \
+ C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX78002/mxc_sys.h \
+ C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX78002/mxc_device.h \
+ C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX78002/Include/max78002.h \
+ C:/MaximSDK/Libraries/CMSIS/Include/core_cm4.h \
+ C:/MaximSDK/Libraries/CMSIS/Include/core_cmInstr.h \
+ C:/MaximSDK/Libraries/CMSIS/Include/core_cmFunc.h \
+ C:/MaximSDK/Libraries/CMSIS/Include/core_cm4_simd.h \
  C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX78002/Include/system_max78002.h \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX78002/mxc_errors.h \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX78002/mxc_pins.h \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX78002/gpio.h \
  C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX78002/Include/gpio_regs.h \
- C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX78002/mxc_lock.h \
- C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX78002/mxc_sys.h \
  C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX78002/Include/lpgcr_regs.h \
  C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX78002/Include/gcr_regs.h \
- C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX78002/Include/spi_regs.h \
- C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX78002/Include/dma_regs.h \
- C:/MaximSDK/Libraries/MiscDrivers/LED/led.h \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX78002/mxc_assert.h \
+ C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX78002/mxc_lock.h \
+ c:\maximsdk\libraries\miscdrivers\display\tft_st7789v.h \
+ c:\maximsdk\libraries\miscdrivers\touchscreen\tsc2046.h \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX78002/gpio.h \
- C:/MaximSDK/Libraries/MiscDrivers/PushButton/pb.h \
- C:/MaximSDK/Libraries/MiscDrivers/Display/tft_st7789v.h \
- C:/MaximSDK/Libraries/MiscDrivers/Touchscreen/tsc2046.h \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX78002/mxc_device.h \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX78002/mxc_delay.h \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX78002/mxc.h \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX78002/mxc_delay.h \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX78002/nvic_table.h \
+ c:\maximsdk\libraries\miscdrivers\led\led.h \
+ C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX78002/mxc_assert.h \
+ c:\maximsdk\libraries\miscdrivers\pushbutton\pb.h \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX78002/adc.h \
  C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX78002/Include/adc_regs.h \
  C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX78002/Include/mcr_regs.h \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX78002/aes.h \
  C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX78002/Include/aes_regs.h \
- C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX78002/Include/aeskeys_regs.h \
+ C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX78002/Include/aes_key_regs.h \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX78002/cameraif.h \
  C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX78002/Include/cameraif_regs.h \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX78002/crc.h \
  C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX78002/Include/crc_regs.h \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX78002/dma.h \
+ C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX78002/Include/dma_regs.h \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX78002/flc.h \
  C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX78002/Include/flc_regs.h \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX78002/i2c.h \
@@ -115,13 +114,13 @@ C:/Users/obuyukso/Desktop/desktop_code/facial_recognition_ai87_mobilefacenet_112
  C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX78002/Include/wut_regs.h \
  include/utils.h \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX78002/uart.h \
- C:/MaximSDK/Libraries/MiscDrivers/Camera/camera.h \
- C:/MaximSDK/Libraries/MiscDrivers/Camera/ov7692_regs.h \
- C:/MaximSDK/Libraries/MiscDrivers/Camera/debayering.h include/faceID.h \
+ c:\maximsdk\libraries\miscdrivers\camera\camera.h \
+ c:\maximsdk\libraries\miscdrivers\camera\ov7692_regs.h include/faceID.h \
  include/facedetection.h include/MAXCAM_Debug.h include/cnn_1.h \
  include/cnn_2.h include/cnn_3.h \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX78002/lp.h \
  include/post_process.h \
  c:\maximsdk\tools\gnutools\10.3\arm-none-eabi\include\stdlib.h \
  c:\maximsdk\tools\gnutools\10.3\arm-none-eabi\include\machine\stdlib.h \
- c:\maximsdk\tools\gnutools\10.3\arm-none-eabi\include\alloca.h
+ c:\maximsdk\tools\gnutools\10.3\arm-none-eabi\include\alloca.h \
+ include/record.h

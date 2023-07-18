@@ -35,7 +35,6 @@
 
 #include <stdio.h>
 #include <stdint.h>
-#include "display.h"
 
 
 #define BIT_SET(a, b) ((a) |= (1U << (b)))

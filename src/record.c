@@ -58,6 +58,7 @@
 #include "facedetection.h"
 #include "weights_3.h"
 #include "baseaddr.h"
+#include "record.h"
 
 
 #define S_MODULE_NAME "record"
@@ -114,12 +115,18 @@ typedef struct person Person;
 /***** Globals *****/
 volatile uint32_t isr_cnt;
 volatile uint32_t isr_flags;
+volatile uint32_t db_flash_emb_count;
+volatile char names[1024][6] = {"AshK", "AshK", "AshK", "AshK", "AshK", "AshK", "BradP", "BradP", "BradP", "BradP", "BradP",
+ "BradP","CharT", "CharT", "CharT", "CharT", "CharT", "CharT", "ChrsH", "ChrsH", "ChrsH", "ChrsH", "ChrsH", "ChrsH", "Erman",
+"Erman", "Erman", "Erman", "Erman", "Erman", "MilaK", "MilaK", "MilaK", "MilaK", "MilaK", "MilaK", "OguzB", "OguzB", "OguzB", 
+"OguzB", "OguzB", "OguzB", "ScarJ", "ScarJ" , "ScarJ", "ScarJ", "ScarJ", "ScarJ"}; // 1024 names of 6 bytes each, as we support 1024 people in the database
 extern volatile int32_t output_buffer[16];
 extern unsigned int touch_x, touch_y;
 extern volatile uint8_t face_detected;
 extern volatile uint8_t capture_key;
 extern volatile uint8_t record_mode;
 static const uint32_t baseaddr[] = BASEADDR;
+int key;
 
 /***** Prototypes *****/
 void get_status(Person *p);
@@ -175,7 +182,8 @@ void init_cnn_from_flash()
     PR_DEBUG("Initializing CNN database from flash\n");
     Person total;
     Person *total_ptr = &total;
-    get_status(total_ptr);
+    get_status(total_ptr);    
+
 
     Person p;
     Person *pptr = &p;
@@ -190,11 +198,13 @@ void init_cnn_from_flash()
     {
         read_db(pptr); //Get the name, id and embeddings count of the person
         PR_DEBUG("Reading person %s with id %d and embeddings count %d\n", pptr->name, pptr->id, pptr->embeddings_count);
+        
         counter = pptr->embeddings_count;
         pptr->embeddings_count = 0;
         for (uint32_t j = 0; j < counter; j++)
         {
-            flash_to_cnn(pptr, location);
+            flash_to_cnn(pptr, location + DEFAULT_EMBS_NUM);
+            
             location += 1;
             pptr->embeddings_count += 1;
         }
@@ -217,6 +227,7 @@ void get_status(Person *p)
         p->id = 1;
         p->embeddings_count = 0;
         p->db_embeddings_count = 0;
+        db_flash_emb_count = p->db_embeddings_count; // Get the total embeddings count from the status field for post processing
         return;
     }
     
@@ -226,6 +237,7 @@ void get_status(Person *p)
     MXC_FLC_Read(STATUS_ADDRESS + 4, &count, 4);
     p->embeddings_count = 0; // Initialize to 0 for every new person
     p->db_embeddings_count = count;
+    db_flash_emb_count = p->db_embeddings_count; // Get the total embeddings count from the status field for post processing
 }
 
 int update_status(Person *p)
@@ -366,6 +378,15 @@ int add_person(Person *p)
 	while(!face_detected || !capture_key)
 		{	
 			face_detection();
+            #ifdef TS_ENABLE
+                key = MXC_TS_GetKey();
+		        if (key == 1) {
+			        record_mode = 1;
+		        }
+                else if (key == 2) {
+                    capture_key = 1;}
+             #endif
+            
 
 			//face_detected = 0;
 		}
@@ -398,14 +419,24 @@ int add_person(Person *p)
     
 
 
-    flash_to_cnn(p, (p->embeddings_count + p->db_embeddings_count)); // Load a single embedding into CNN_3
+    flash_to_cnn(p, (p->embeddings_count + p->db_embeddings_count + DEFAULT_EMBS_NUM)); // Load a single embedding into CNN_3
     p->embeddings_count += 1; // TODO: Check this later for add person, add embedding logic
     //p->db_embeddings_count += 1;
 
     record_mode = 0;
     PR_DEBUG("To continue to capture press P2.6, to return to main menu press P2.7\n");
+    
     while(!capture_key)
 		{	
+        #ifdef TS_ENABLE
+            key = MXC_TS_GetKey();
+		    if (key == 1) {
+			    record_mode = 1;
+		    }
+            else if (key == 2) {
+                capture_key = 1;
+            }
+        #endif
             if (record_mode){ //If record mode is off, return to main menu
 
                 err = update_info_field(p); //Update the information field
@@ -538,6 +569,11 @@ void flash_to_cnn(Person *p, uint32_t cnn_location)
 
     }
 
+    for (int k = 0; k < 6; k++) //TODO: Optimize this, memcpy?
+            {
+                 names[cnn_location][k] = p->name[k]; // Populate the names array for post processing
+            }
+
 }
 
 
@@ -646,6 +682,7 @@ int record()
             if (err) {
             printf("Failed to update status", err);
             return err; }
+            get_status(pptr); 
             printf("Exiting to main menu", err);
             // Re-enable the ICC
             MXC_ICC_Enable(MXC_ICC0);

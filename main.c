@@ -255,6 +255,7 @@ int main(void)
     int slaveAddress;
     int id;
     int dma_channel;
+	int key;
 	mxc_uart_regs_t* ConsoleUart;
 
     /* Enable cache */
@@ -369,6 +370,8 @@ int main(void)
 	#ifdef TS_ENABLE
 		MXC_TS_Init();	
     	MXC_TS_Start();
+		MXC_TS_AddButton(0, 0, 80, 80, 1);
+		MXC_TS_AddButton(160, 0, 240, 80, 2);
 	#else
 		mxc_gpio_cfg_t gpio_interrupt;
 		gpio_interrupt.port = MXC_GPIO_PORT_INTERRUPT_IN;
@@ -415,8 +418,14 @@ int main(void)
 #endif
 
     while (1) {
+		
 		#ifdef TS_ENABLE //TODO: update here for record mode
-			if (MXC_TS_GetTSEvent()) {
+		key = MXC_TS_GetKey();
+		if (key == 1) {
+			record_mode = 1;
+		}
+
+			/*if (MXC_TS_GetTSEvent()) {
             	MXC_TS_ClearTSEvent();
             	MXC_TS_GetXY(&touch_x, &touch_y); //TS Rotate 90 degree
 				PR_DEBUG("Touch X: %d, Y: %d\n", touch_x, touch_y);
@@ -428,8 +437,8 @@ int main(void)
 
 
             //print_xy(touch_x, touch_y);
-        	}
-		#endif
+        	}*/
+		#endif 
 		if (record_mode)
 		{
 			//printf("record mode\n");

@@ -1,5 +1,5 @@
 C:/Users/obuyukso/Desktop/desktop_code/facial_recognition_ai87_mobilefacenet_112_cos_emb_gen/build/ov7692.o: \
- C:/MaximSDK/Libraries/MiscDrivers/Camera/ov7692.c \
+ c:\maximsdk\libraries\miscdrivers\camera\ov7692.c \
  c:\maximsdk\tools\gnutools\10.3\arm-none-eabi\include\stdio.h \
  c:\maximsdk\tools\gnutools\10.3\arm-none-eabi\include\_ansi.h \
  c:\maximsdk\tools\gnutools\10.3\arm-none-eabi\include\newlib.h \
@@ -40,21 +40,19 @@ C:/Users/obuyukso/Desktop/desktop_code/facial_recognition_ai87_mobilefacenet_112
  c:\maximsdk\tools\gnutools\10.3\arm-none-eabi\include\strings.h \
  c:\maximsdk\tools\gnutools\10.3\arm-none-eabi\include\sys\string.h \
  c:\maximsdk\tools\gnutools\10.3\arm-none-eabi\include\math.h \
- C:/MaximSDK/Libraries/MiscDrivers/Camera/camera.h \
- C:/MaximSDK/Libraries/MiscDrivers/Camera/ov7692_regs.h \
- C:/MaximSDK/Libraries/MiscDrivers/Camera/debayering.h \
+ c:\maximsdk\libraries\miscdrivers\camera\camera.h \
+ c:\maximsdk\libraries\miscdrivers\camera\ov7692_regs.h \
  C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX78002/Include/tmr_regs.h \
- C:/MaximSDK/Libraries/MiscDrivers/Camera/sccb.h \
+ c:\maximsdk\libraries\miscdrivers\camera\sccb.h \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX78002/gpio.h \
  C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX78002/Include/gpio_regs.h \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX78002/mxc_delay.h \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX78002/mxc_device.h \
  C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX78002/Include/max78002.h \
- C:/MaximSDK/Libraries/CMSIS/5.9.0/Core/Include/core_cm4.h \
- C:/MaximSDK/Libraries/CMSIS/5.9.0/Core/Include/cmsis_version.h \
- C:/MaximSDK/Libraries/CMSIS/5.9.0/Core/Include/cmsis_compiler.h \
- C:/MaximSDK/Libraries/CMSIS/5.9.0/Core/Include/cmsis_gcc.h \
- C:/MaximSDK/Libraries/CMSIS/5.9.0/Core/Include/mpu_armv7.h \
+ C:/MaximSDK/Libraries/CMSIS/Include/core_cm4.h \
+ C:/MaximSDK/Libraries/CMSIS/Include/core_cmInstr.h \
+ C:/MaximSDK/Libraries/CMSIS/Include/core_cmFunc.h \
+ C:/MaximSDK/Libraries/CMSIS/Include/core_cm4_simd.h \
  C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX78002/Include/system_max78002.h \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX78002/mxc_errors.h \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX78002/mxc_pins.h \

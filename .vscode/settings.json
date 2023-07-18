@@ -1,6 +1,7 @@
 {
     "files.associations": {
         "facedetection.h": "c",
-        "post_process.h": "c"
+        "post_process.h": "c",
+        "baseaddr.h": "c"
     }
 }

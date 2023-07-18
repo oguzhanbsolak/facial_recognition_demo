@@ -51,6 +51,7 @@
 #include "uart.h"
 #include "math.h"
 #include "post_process.h"
+#include "record.h"
 
 #define S_MODULE_NAME "faceid"
 
@@ -60,6 +61,8 @@ extern uint32_t ticks_1;
 extern uint32_t ticks_2;
 extern mxc_wut_cfg_t cfg;
 extern area_t area;
+extern volatile uint32_t db_flash_emb_count;
+extern volatile char names[1024][6]; // 1024 names of 6 bytes each, as we support 1024 people in the database
 /************************************ VARIABLES ******************************/
 extern volatile uint32_t cnn_time; // Stopwatch
 
@@ -282,7 +285,7 @@ static void run_cnn_2(int x_offset, int y_offset)
     uint8_t y1 =  MAX(box[0], 0); 
     float sum = 0;
     float b;
-    char dummy_db[8][20] = {"AshtonKutcher", "BradPitt", "CharlizeTheron", "ChrisHemsworth", "Erman", "MilaKunis", "Oguzhan", "ScarlettJohansson"};
+    //char dummy_db[8][20] = {"AshtonKutcher", "BradPitt", "CharlizeTheron", "ChrisHemsworth", "Erman", "MilaKunis", "Oguzhan", "ScarlettJohansson"};
 
     //uint8_t send_package[3];
     //uint8_t* snd_ptr = send_package;
@@ -554,7 +557,7 @@ static void run_cnn_2(int x_offset, int y_offset)
     int8_t max_emb_index = 0;
     char* name;
        
-     for (int i = 0; i < 12; i++)
+     for (int i = 0; i < (DEFAULT_EMBS_NUM + db_flash_emb_count + 3) / 4; i++)
     {   
         value = *ml_point;
         pr_value = value & 0xff;
@@ -564,7 +567,7 @@ static void run_cnn_2(int x_offset, int y_offset)
             max_emb_index = i*4;
             
         }
-        PR_DEBUG("pr_value: %d, index: %d\n", pr_value, i*4);
+        PR_DEBUG("pr_value: %d, index: %d\n, name: %s", pr_value, i*4, names[i*4]);
         pr_value = (value >> 8) & 0xff;
         if ((int8_t)pr_value > max_emb)
         {
@@ -572,7 +575,7 @@ static void run_cnn_2(int x_offset, int y_offset)
             max_emb_index = (i*4)+1;
             
         }
-        PR_DEBUG("pr_value: %d, index: %d\n", pr_value, (i*4)+1);
+        PR_DEBUG("pr_value: %d, index: %d\n, name: %s", pr_value, i*4, names[(i*4)+1]);
         pr_value = (value >> 16) & 0xff;
         if ((int8_t)pr_value > max_emb)
         {
@@ -580,7 +583,7 @@ static void run_cnn_2(int x_offset, int y_offset)
             max_emb_index = (i*4)+2;
             PR_DEBUG("pr_value: %d\n", pr_value);
         }
-        PR_DEBUG("pr_value: %d, index: %d\n", pr_value, (i*4)+2);
+        PR_DEBUG("pr_value: %d, index: %d\n, name: %s", pr_value, i*4, names[(i*4)+2]);
         pr_value = (value >> 24) & 0xff;
         if ((int8_t)pr_value > max_emb)
         {
@@ -588,7 +591,7 @@ static void run_cnn_2(int x_offset, int y_offset)
             max_emb_index = (i*4)+3;
             PR_DEBUG("pr_value: %d\n", pr_value);
         }
-        PR_DEBUG("pr_value: %d, index: %d\n", pr_value, (i*4)+3);
+        PR_DEBUG("pr_value: %d, index: %d\n, name: %s", pr_value, i*4, names[(i*4)+3]);
         ml_point++;
     } 
     PR_DEBUG("FaceID inference time: %d ms\n", utils_get_time_ms() - pass_time);
@@ -596,9 +599,9 @@ static void run_cnn_2(int x_offset, int y_offset)
     PR_DEBUG("CNN_3 max value index: %d \n", max_emb_index);
     if (max_emb > Threshold)
     {
-        PR_DEBUG("subject id: %d \n", max_emb_index/6);
-        name =  dummy_db[max_emb_index/6];
-        PR_DEBUG("subject name: %s \n", dummy_db[max_emb_index/6]);
+        //PR_DEBUG("subject id: %d \n", max_emb_index/6);
+        name =  names[max_emb_index];
+        PR_DEBUG("subject name: %s \n", name);
     }
     else
     {

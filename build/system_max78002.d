@@ -40,11 +40,10 @@ C:/Users/obuyukso/Desktop/desktop_code/facial_recognition_ai87_mobilefacenet_112
  c:\maximsdk\tools\gnutools\10.3\lib\gcc\arm-none-eabi\10.3.1\include\stdint.h \
  c:\maximsdk\tools\gnutools\10.3\arm-none-eabi\include\stdint.h \
  c:\maximsdk\tools\gnutools\10.3\arm-none-eabi\include\sys\_intsup.h \
- C:/MaximSDK/Libraries/CMSIS/5.9.0/Core/Include/core_cm4.h \
- C:/MaximSDK/Libraries/CMSIS/5.9.0/Core/Include/cmsis_version.h \
- C:/MaximSDK/Libraries/CMSIS/5.9.0/Core/Include/cmsis_compiler.h \
- C:/MaximSDK/Libraries/CMSIS/5.9.0/Core/Include/cmsis_gcc.h \
- C:/MaximSDK/Libraries/CMSIS/5.9.0/Core/Include/mpu_armv7.h \
+ C:/MaximSDK/Libraries/CMSIS/Include/core_cm4.h \
+ C:/MaximSDK/Libraries/CMSIS/Include/core_cmInstr.h \
+ C:/MaximSDK/Libraries/CMSIS/Include/core_cmFunc.h \
+ C:/MaximSDK/Libraries/CMSIS/Include/core_cm4_simd.h \
  C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX78002/Include/system_max78002.h \
  C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX78002/Include/gcr_regs.h \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX78002/mxc_sys.h \

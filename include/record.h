@@ -35,7 +35,7 @@
 #define _RECORD_H_
 
 #define EMBEDDING_SIZE 64
-#define DEFAULT_EMBS_NUM 42 // TODO: Update the logic to implement this
+#define DEFAULT_EMBS_NUM 48 // TODO: Update the logic to implement this
 
 int record();
 void init_cnn_from_flash();

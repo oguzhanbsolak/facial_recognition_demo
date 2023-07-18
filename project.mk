@@ -21,6 +21,7 @@ $(info Note: This project is designed and tested for the NewHaven NHD-2.4 screen
 
 #LIB_LVGL = 1
 #TFT = ADAFRUIT
+TFT=NEWHAVEN
 # Place build files specific to EvKit_V1 here.
 ifeq "$(BOARD)" "EvKit_V1"
 PROJ_CFLAGS+=-DTFT_ENABLE

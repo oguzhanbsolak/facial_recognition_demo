@@ -35,7 +35,7 @@
 #define _FACEID_H_
 
 #define USE_BOX_ONLY
-//#define TS_ENABLE //disabled for now as SDK update broke it
+#define TS_ENABLE //disabled for now as SDK update broke it
 
 #define RED_LED     0
 #define GREEN_LED   1
