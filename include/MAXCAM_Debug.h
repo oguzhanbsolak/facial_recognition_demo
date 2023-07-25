@@ -40,7 +40,7 @@
 
 #ifndef IMAGE_TO_UART
 #define PR_DEBUG(fmt, args...) \
-    if (1)                     \
+    if (0)                     \
     printf("D[%-10s:%4d] " fmt "\r\n", S_MODULE_NAME, __LINE__, ##args) ///< TODO
 #define PR_INFO(fmt, args...) \
     if (0)                    \

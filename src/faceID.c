@@ -82,7 +82,9 @@ static int box_y_offset = 0;
 uint8_t box[4]; // x1, y1, x2, y2
 volatile int32_t output_buffer[16];
 
-
+#ifdef UNNORMALIZE_RECORD
+volatile int32_t norm_output_buffer[16]; // TODO:For unnormilized emb. experiment
+#endif
 
 static int32_t ml_3_data32[(CNN_3_NUM_OUTPUTS + 3) / 4];
 
@@ -169,9 +171,11 @@ int face_id(void)
             process_time = utils_get_time_ms();
 #endif
 
-			get_box();
+			#ifndef USE_BOX_ONLY
+            get_box(); // when USE_BOX_ONLY not used
 
-            process_img(box_x_offset, box_y_offset);
+            process_img(box_x_offset, box_y_offset); // when USE_BOX_ONLY not used
+            #endif
 
 			/* Run CNN */
 			run_cnn_2(box_x_offset, box_y_offset);
@@ -260,7 +264,7 @@ uint8_t* raw;
             //PR_WARN("Low Light!");
             printResult.data = " LOW LIGHT ";
             printResult.len  = strlen(printResult.data);
-            area_t area      = {50, 290, 180, 30};
+            area_t area      = {100, 290, 200, 30};
             MXC_TFT_ClearArea(&area, 4);
             MXC_TFT_PrintFont(CAPTURE_X, CAPTURE_Y, font, &printResult, NULL);
         }
@@ -458,8 +462,11 @@ static void run_cnn_2(int x_offset, int y_offset)
         if (n4 < 0) {
             n4 = 256 + n4;           
         }
-
-        output_buffer[i] = (((uint8_t)n4) << 24) | (((uint8_t)n3) << 16) | (((uint8_t)n2) << 8) | ((uint8_t)n1);
+        #ifdef UNNORMALIZE_RECORD
+            norm_output_buffer[i] = (((uint8_t)n4) << 24) | (((uint8_t)n3) << 16) | (((uint8_t)n2) << 8) | ((uint8_t)n1);
+        #else
+            output_buffer[i] = (((uint8_t)n4) << 24) | (((uint8_t)n3) << 16) | (((uint8_t)n2) << 8) | ((uint8_t)n1);
+        #endif
     } 
 
 
@@ -479,8 +486,11 @@ static void run_cnn_2(int x_offset, int y_offset)
     
 
 
-    
-    uint32_t *out_point = (uint32_t *)output_buffer;
+    #ifdef UNNORMALIZE_RECORD
+        uint32_t *out_point = (uint32_t *)norm_output_buffer; // For unnormalized emb. experiment
+    #else
+        uint32_t *out_point = (uint32_t *)output_buffer;
+    #endif
 
     memcpy32((uint32_t *) 0x51800000, out_point, 1);
     out_point++;

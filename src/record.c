@@ -125,8 +125,15 @@ extern unsigned int touch_x, touch_y;
 extern volatile uint8_t face_detected;
 extern volatile uint8_t capture_key;
 extern volatile uint8_t record_mode;
+volatile uint8_t face_ok = 0;
+extern area_t area_1;
+extern area_t area_2;
+extern uint8_t box[4]; // x1, y1, x2, y2 
 static const uint32_t baseaddr[] = BASEADDR;
 int key;
+char alphabet[26][1] = {"A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"};
+static int font   = (int)&SansSerif16x16[0];
+
 
 /***** Prototypes *****/
 void get_status(Person *p);
@@ -140,8 +147,186 @@ void flash_to_cnn(Person *p, uint32_t cnn_location);
 void setup_irqs();
 void read_db(Person *p);
 bool check_db();
+void show_keyboard();
+void get_name(Person *p);
+void show_face();
+
+/***** Functions *****/
+
+void get_name(Person *p)
+{
+    show_keyboard();
+    int key = 0;
+    int len = 0;
+    text_t text_buffer;
+    area_t area_buffer;
+
+	while (1){
+        key = MXC_TS_GetKey();
+        if (key == 0)
+            continue;
+        else if (key == 28)
+            {p->name[len] = '\0'; // null terminator
+            break;}
+        else if (key == 27 && len > 0)
+        {
+            len--;
+            p->name[len] = '\0';
+            
+            text_buffer.data = p->name;
+            text_buffer.len  = 6;
+            area_buffer.y = 300;
+            area_buffer.x = 120;
+            area_buffer.h = 20;
+            area_buffer.w = 100;
+            MXC_TFT_ClearArea(&area_buffer, 4);
+            MXC_TFT_PrintFont(120, 300, font, &text_buffer, NULL);
+        }
+        //TODO: No need to reserve a character for null terminator on the flash
+        else if (len < 5) // 6th character is reserved for null terminator 
+        {
+            PR_DEBUG("key: %d\n", key);
+            p->name[len] = alphabet[key-1][0];
+            len++;
+            text_buffer.data = p->name;
+            text_buffer.len  = 6;
+            MXC_TFT_PrintFont(120, 300, font, &text_buffer, NULL);
+
+        }
+        
+        
+    }	
+
+    MXC_TFT_ClearScreen(); 
+    MXC_TS_RemoveAllButton();
+
+}
+
+void show_keyboard()
+{
+    // Description : Shows the keyboard on the TFT screen
+    //Clear the screen and the buttons
+    MXC_TFT_ClearScreen(); 
+    MXC_TS_RemoveAllButton();
+
+    //Add the buttons
+    area_t area_buffer;
+    text_t text_buffer;
+    
+    for (int i = 0; i < 26; i++)
+    {
+        if (i/4 == 0)
+        {
+            MXC_TS_AddButton(25 , 180 - (i%4) * 50, 55, 220 - (i%4) * 50, i + 1);
+            area_buffer.y = 20;
+            area_buffer.x = 20 + (i%4) * 50;
+            area_buffer.h = 30;
+            area_buffer.w = 40;
+            text_buffer.data = alphabet[i];
+            text_buffer.len  = 1;
+            MXC_TFT_FillRect(&area_buffer, 0xFD20);
+            MXC_TFT_PrintFont(area_buffer.x + 15, area_buffer.y + 12, font, &text_buffer, NULL);
+        }
+        else if (i/4 == 1)
+        {
+            MXC_TS_AddButton(65 , 180 - (i%4) * 50, 95, 220 - (i%4) * 50, i + 1);
+            area_buffer.y = 60;
+            area_buffer.x = 20 + (i%4) * 50;
+            area_buffer.h = 30;
+            area_buffer.w = 40;
+            text_buffer.data = alphabet[i];
+            text_buffer.len  = 1;
+            MXC_TFT_FillRect(&area_buffer, 0xED20);
+            MXC_TFT_PrintFont(area_buffer.x + 15, area_buffer.y + 12, font, &text_buffer, NULL);
+        }
+        else if (i/4 == 2)
+        {
+            MXC_TS_AddButton(105 , 180 - (i%4) * 50, 135, 220 - (i%4) * 50, i + 1);
+            area_buffer.y = 100;
+            area_buffer.x = 20 + (i%4) * 50;
+            area_buffer.h = 30;
+            area_buffer.w = 40;
+            text_buffer.data = alphabet[i];
+            text_buffer.len  = 1;
+            MXC_TFT_FillRect(&area_buffer, 0xDD20);
+            MXC_TFT_PrintFont(area_buffer.x + 15, area_buffer.y + 12, font, &text_buffer, NULL);
+        }
+        else if (i/4 == 3)
+        {
+            MXC_TS_AddButton(145 , 180 - (i%4) * 50, 175, 220 - (i%4) * 50, i + 1);
+            area_buffer.y = 140;
+            area_buffer.x = 20 + (i%4) * 50;
+            area_buffer.h = 30;
+            area_buffer.w = 40;
+            text_buffer.data = alphabet[i];
+            text_buffer.len  = 1;
+            MXC_TFT_FillRect(&area_buffer, 0xCD20);
+            MXC_TFT_PrintFont(area_buffer.x + 15, area_buffer.y + 12, font, &text_buffer, NULL);
+        }
+        else if (i/4 == 4)
+        {
+            MXC_TS_AddButton(185 , 180 - (i%4) * 50, 215, 220 - (i%4) * 50, i + 1);
+            area_buffer.y = 180;
+            area_buffer.x = 20 + (i%4) * 50;
+            area_buffer.h = 30;
+            area_buffer.w = 40;
+            text_buffer.data = alphabet[i];
+            text_buffer.len  = 1;
+            MXC_TFT_FillRect(&area_buffer, 0xBD20);
+            MXC_TFT_PrintFont(area_buffer.x + 15, area_buffer.y + 12, font, &text_buffer, NULL);
+        }
+        else if (i/4 == 5)
+        {
+            MXC_TS_AddButton(225 , 180 - (i%4) * 50, 255, 220 - (i%4) * 50, i + 1);
+            area_buffer.y = 220;
+            area_buffer.x = 20 + (i%4) * 50;
+            area_buffer.h = 30;
+            area_buffer.w = 40;
+            text_buffer.data = alphabet[i];
+            text_buffer.len  = 1;
+            MXC_TFT_FillRect(&area_buffer, 0xAD20);
+            MXC_TFT_PrintFont(area_buffer.x + 15, area_buffer.y + 12, font, &text_buffer, NULL);
+        }
+        else if (i/4 == 6)
+        {
+            MXC_TS_AddButton(265 , 180 - (i%4) * 50, 295, 220 - (i%4) * 50, i + 1);
+            area_buffer.y = 260;
+            area_buffer.x = 20 + (i%4) * 50;
+            area_buffer.h = 30;
+            area_buffer.w = 40;
+            text_buffer.data = alphabet[i];
+            text_buffer.len  = 1;
+            MXC_TFT_FillRect(&area_buffer, 0x9D20);
+            MXC_TFT_PrintFont(area_buffer.x + 15, area_buffer.y + 12, font, &text_buffer, NULL);
+        }
+        
+    }
+
+    //Add Bckspc button
+    MXC_TS_AddButton(265 , 80, 295, 120, 27);
+    area_buffer.y = 260;
+    area_buffer.x = 120;
+    area_buffer.h = 30;
+    area_buffer.w = 40;
+    text_buffer.data = "Bck";
+    text_buffer.len  = 3;
+    MXC_TFT_FillRect(&area_buffer, 0x9D20);
+    MXC_TFT_PrintFont(area_buffer.x, area_buffer.y + 12, font, &text_buffer, NULL);
+
+    //Add OK button
+    MXC_TS_AddButton(265 , 30, 295, 70, 28);
+    area_buffer.y = 260;
+    area_buffer.x = 170;
+    area_buffer.h = 30;
+    area_buffer.w = 40;
+    text_buffer.data = "OK";
+    text_buffer.len  = 2;
+    MXC_TFT_FillRect(&area_buffer, 0x9D20);
+    MXC_TFT_PrintFont(area_buffer.x + 5, area_buffer.y + 12, font, &text_buffer, NULL);
+    
 
 
+}
 
 void read_db(Person *p)
 {   
@@ -358,39 +543,166 @@ bool check_db()
     
     return (magic_read == MAGIC);
 }
+//============================================================================
+void show_face()
+{
+    uint32_t imgLen;
+    uint32_t w, h;
+    uint8_t* raw;
+    uint8_t img_buffer[HEIGHT_ID*WIDTH_ID*2]; //112x112x2
+    uint8_t* img_ptr = img_buffer;
 
+    uint8_t x_loc;
+    uint8_t y_loc;
+    float y_prime;
+    float x_prime;
+    uint8_t x1 =  MAX(box[0], 0); 
+    uint8_t y1 =  MAX(box[1], 0); 
+    uint8_t box_width = box[2] - box[0];
+    uint8_t box_height = box[3] - box[1];
+
+    PR_DEBUG("Box width: %d\n", box_width);
+    PR_DEBUG("Box height: %d\n", box_height);
+    PR_DEBUG("Box x1: %d\n", x1);
+    PR_DEBUG("Box y1: %d\n", y1);
+    
+    
+    MXC_TFT_ClearScreen();
+	
+
+	
+    camera_get_image(&raw, &imgLen, &w, &h);
+    PR_DEBUG("w , h , %d, %d\n", w, h);
+    uint8_t* data = raw;
+
+    // Get the details of the image from the camera driver.
+    
+    for (int i = 0; i <  HEIGHT_ID ; i++) {
+        y_prime = ((float)(i) / HEIGHT_ID) * box_height;
+        y_loc =  (uint8_t) (MIN(round(y_prime), box_height-1));
+         for (int j = 0; j < WIDTH_ID ; j++) {
+            x_prime = ((float)(j) / WIDTH_ID) * box_width;
+            x_loc = (uint8_t) (MIN(round(x_prime), box_width-1));
+            img_buffer[(j  * BYTE_PER_PIXEL *  HEIGHT_ID) + (i  * BYTE_PER_PIXEL)] = data[((x1 + x_loc) * BYTE_PER_PIXEL * HEIGHT_DET) + ((y1 + y_loc) * BYTE_PER_PIXEL )];
+            img_buffer[(j  * BYTE_PER_PIXEL * HEIGHT_ID) +  (i  * BYTE_PER_PIXEL) + 1] = data[((x1 + x_loc)  * BYTE_PER_PIXEL * HEIGHT_DET) + ((y1 + y_loc) * BYTE_PER_PIXEL) + 1]; }
+    }
+
+
+    MXC_TFT_ShowImageCameraRGB565(SHOW_START_X, SHOW_START_Y, img_ptr, HEIGHT_ID, WIDTH_ID);
+
+
+}
 //============================================================================
 int add_person(Person *p)
 {
     int err = 0;
-
+    int init_reshow = 0;
+    int init_faceid = 0;
     face_detected = 0;
+    text_t text_buffer;
+    area_t area_buffer;
 
     if (p->embeddings_count == 0) {
         PR_DEBUG("Enter name: ");
-
-        scanf("%5s", p->name);
+        #ifdef TS_ENABLE
+            get_name(p);
+        #else
+            scanf("%5s", p->name);
+        #endif
         PR_DEBUG("Name entered: %s\n", p->name); //TODO:Get the name from TS
-    }   
+    }
 
+    
+    
+	MXC_TS_AddButton(260, 160, 320, 240, 2);
+	
+	MXC_TFT_FillRect(&area_2, 0xFD20);
 
-
-	while(!face_detected || !capture_key)
+    text_buffer.data = "Capture";
+    text_buffer.len  = 7;
+    MXC_TFT_PrintFont(0, 270, font, &text_buffer, NULL);
+    //TODO: Get user's feedback for the captured image
+    while (!face_ok)
+    {   
+        init_faceid = 0;
+        while(!face_detected || !capture_key)
 		{	
-			face_detection();
+			if (!init_faceid)
+            {   
+                MXC_TFT_ClearScreen(); 
+                MXC_TS_RemoveAllButton();
+                MXC_TS_AddButton(260, 160, 320, 240, 2);	
+	            MXC_TFT_FillRect(&area_2, 0xFD20);
+                text_buffer.data = "Capture";
+                text_buffer.len  = 7;
+                MXC_TFT_PrintFont(0, 270, font, &text_buffer, NULL);
+                init_faceid = 1;
+            }
+
+            face_detection();
+
             #ifdef TS_ENABLE
-                key = MXC_TS_GetKey();
-		        if (key == 1) {
-			        record_mode = 1;
-		        }
-                else if (key == 2) {
-                    capture_key = 1;}
+                key = MXC_TS_GetKey();		       
+                if (key == 2) {
+                    capture_key = 1;                    
+                    MXC_TFT_FillRect(&area_2, 0x9D20);
+                    text_buffer.data = "Capture";
+                    text_buffer.len  = 7;
+                    MXC_TFT_PrintFont(0, 270, font, &text_buffer, NULL);
+                    }
+
              #endif
             
 
 			//face_detected = 0;
 		}
+        capture_key = 0;
+        face_detected = 0;
 
+        show_face();
+
+        if (!init_reshow)
+        {
+            //Clear buttons
+        MXC_TFT_FillRect(&area_1, 0xFD20);
+        MXC_TFT_FillRect(&area_2, 0xFD20);
+        MXC_TS_AddButton(260, 0, 320, 80, 1);
+        MXC_TS_AddButton(260, 160, 320, 240, 2);
+
+        text_buffer.data = "OK";
+        text_buffer.len  = 2;
+        MXC_TFT_PrintFont(0, 270, font, &text_buffer, NULL);
+        
+
+        text_buffer.data = "Retry";
+        text_buffer.len  = 5;
+        MXC_TFT_PrintFont(162, 270, font, &text_buffer, NULL);
+        init_reshow = 1;
+        }       
+
+        //Show captured face
+        
+        // Ask user if he/she is ok with the image
+        // If not, repeat the process
+        key = 0;
+        while(key == 0) //Wait for user's feedback, 0 is the default value
+        {
+        key = MXC_TS_GetKey();	
+        if (key == 2) {
+            face_ok = 1;
+            init_reshow = 0;
+            PR_DEBUG("Face is ok\n");
+        }
+        else if (key == 1) {
+            face_ok = 0;
+            init_reshow = 0;
+            PR_DEBUG("Face is not ok\n");
+        }
+        }
+        
+
+    }
+    face_ok = 0;
     capture_key = 0;
 
     face_id();
@@ -425,7 +737,21 @@ int add_person(Person *p)
 
     record_mode = 0;
     PR_DEBUG("To continue to capture press P2.6, to return to main menu press P2.7\n");
+
+    text_buffer.data = "Cnt?";
+    text_buffer.len  = 4;
+    MXC_TFT_FillRect(&area_2, 0xFD20);
+    MXC_TFT_PrintFont(0, 270, font, &text_buffer, NULL);
     
+    
+    MXC_TS_AddButton(260, 0, 320, 80, 1);
+
+    MXC_TFT_FillRect(&area_1, 0xFD20);
+
+    text_buffer.data = "Exit";
+    text_buffer.len  = 4;
+    MXC_TFT_PrintFont(162, 270, font, &text_buffer, NULL);
+
     while(!capture_key)
 		{	
         #ifdef TS_ENABLE
@@ -443,6 +769,9 @@ int add_person(Person *p)
                 
                 p->db_embeddings_count = p->db_embeddings_count + p->embeddings_count;
 
+                MXC_TFT_ClearScreen(); 
+                MXC_TS_RemoveAllButton();
+
                 if (err) {
                 printf("Failed to update info field with error code %i!\n", err);
                 return err; }   
@@ -452,10 +781,12 @@ int add_person(Person *p)
 		}
 
     capture_key = 0;
+    MXC_TFT_ClearScreen(); 
+    MXC_TS_RemoveAllButton();
 
     err = add_person(p);
 
-    return err; //Never expect to reach here
+    return err;
 
 }
 

@@ -203,7 +203,7 @@ static const uint8_t camera_settings[][2] = {
 
 mxc_uart_regs_t* CommUart;
 unsigned int touch_x, touch_y;
-int font_1 = (int)&SansSerif16x16[0];
+int font = (int)&SansSerif16x16[0];
 
 
 void gpio_isr(void *cbdata)
@@ -218,9 +218,12 @@ void gpio_isr_2(void *cbdata)
 }
 
 #ifdef TFT_ENABLE
-area_t area = {50, 290, 180, 30};
+area_t area = {100, 290, 200, 30};
+area_t area_1 = {160, 260, 80, 30};
+area_t area_2 = {0, 260, 80, 30};
 #endif
 // *****************************************************************************
+/*
 void TFT_Print(char *str, int x, int y, int font, int length)
 {
     text_t text = { .data = str, .len = length };
@@ -228,16 +231,16 @@ void TFT_Print(char *str, int x, int y, int font, int length)
 	y = TFT_HEIGHT - y; //Rotate 90 degrees
     MXC_TFT_PrintFont(y, x, font, &text, NULL); //Rotate 90 degrees
 
-}
+} */
 
-
+/*
 void print_xy(unsigned int x, unsigned int y)
 {
     char buf[16];
 
     MXC_TFT_ClearScreen();
     TFT_Print(buf, x, y, font_1, snprintf(buf, sizeof(buf), "(%u,%u)", x, y));
-}
+}*/
 
 
 void WUT_IRQHandler()
@@ -256,7 +259,9 @@ int main(void)
     int id;
     int dma_channel;
 	int key;
+	int after_record = 1;
 	mxc_uart_regs_t* ConsoleUart;
+	text_t text_buffer;
 
     /* Enable cache */
     MXC_ICC_Enable(MXC_ICC0);
@@ -370,8 +375,8 @@ int main(void)
 	#ifdef TS_ENABLE
 		MXC_TS_Init();	
     	MXC_TS_Start();
-		MXC_TS_AddButton(0, 0, 80, 80, 1);
-		MXC_TS_AddButton(160, 0, 240, 80, 2);
+		
+		//MXC_TFT_FillRect(&area_2, 0xFD20);
 	#else
 		mxc_gpio_cfg_t gpio_interrupt;
 		gpio_interrupt.port = MXC_GPIO_PORT_INTERRUPT_IN;
@@ -416,11 +421,19 @@ int main(void)
     /* Enable WakeUp Timer interrupt */
     NVIC_EnableIRQ(WUT_IRQn);
 #endif
-
     while (1) {
 		
 		#ifdef TS_ENABLE //TODO: update here for record mode
-		key = MXC_TS_GetKey();
+		if (after_record){
+			after_record = 0;
+			MXC_TS_AddButton(260, 0, 290, 80, 1);
+			MXC_TFT_FillRect(&area_1, 0xFD20);
+			text_buffer.data = "Record";
+    		text_buffer.len  = 6;
+    		MXC_TFT_PrintFont(162, 270, font, &text_buffer, NULL);}
+
+		key = MXC_TS_GetKey();		
+		
 		if (key == 1) {
 			record_mode = 1;
 		}
@@ -448,6 +461,7 @@ int main(void)
 			//TODO: More elegant way to do this
 			MXC_Delay(MXC_DELAY_MSEC(500));
 			record_mode = 0;
+			after_record = 1;
 		}
 		else {
 
@@ -470,7 +484,7 @@ int main(void)
 
 		}
 		
-
+		
     }
 
     return 0;

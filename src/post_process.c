@@ -473,6 +473,13 @@ void localize_objects(void)
                 box[1] = (uint8_t)(IMAGE_SIZE_Y * xy[1]);
                 box[2] = (uint8_t)(IMAGE_SIZE_X * xy[2]);
                 box[3] = (uint8_t)(IMAGE_SIZE_Y * xy[3]);
+
+                int x1 = X_START + box[0];
+                int x2 = X_START + box[2];
+                int y1 = Y_START + box[1];
+                int y2 = Y_START + box[3];
+
+	            MXC_TFT_Rectangle(x1, y1, x2, y2, 0xFD20);
 				
 #if 0
 			    PR_DEBUG("class: %d, prior_idx: %d, prior: %d, x1: %.2f, y1: %.2f, x2: %.2f, y2: "

@@ -37,7 +37,11 @@
 #define EMBEDDING_SIZE 64
 #define DEFAULT_EMBS_NUM 48 // TODO: Update the logic to implement this
 
+#define SHOW_START_X (TFT_HEIGHT - HEIGHT_ID)/2
+#define SHOW_START_Y (TFT_WIDTH - WIDTH_ID)/2
+
 int record();
+void show_keyboard();
 void init_cnn_from_flash();
 
 

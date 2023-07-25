@@ -35,14 +35,15 @@
 #define _FACEID_H_
 
 #define USE_BOX_ONLY
-#define TS_ENABLE //disabled for now as SDK update broke it
+#define TS_ENABLE
+//#define UNNORMALIZE_RECORD // Do not normalize the recorded embeddings
 
 #define RED_LED     0
 #define GREEN_LED   1
 #define BLUE_LED    2
 
-#define CAPTURE_X 50
-#define CAPTURE_Y 290
+#define CAPTURE_X 100
+#define CAPTURE_Y 300
 
 #define HEIGHT_ID      112
 #define WIDTH_ID       112
