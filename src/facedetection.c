@@ -61,7 +61,7 @@ static void run_cnn_1(int x_offset, int y_offset);
 static void ARM_low_power(int lp_mode);
 #endif
 
-int face_detection(void)
+int  face_detection(void)
 {
         // Capture the image
 		camera_start_capture_image();
@@ -142,7 +142,10 @@ static void run_cnn_1(int x_offset, int y_offset)
     // Get the details of the image from the camera driver.
     camera_get_image(&raw, &imgLen, &w, &h);
     #ifdef TFT_ENABLE
+    int tft_time = utils_get_time_ms();
     MXC_TFT_ShowImageCameraRGB565(X_START, Y_START, raw, w, h);
+    tft_time = utils_get_time_ms() - tft_time;
+    PR_INFO("TFT Time : %dms", tft_time);
     #endif
     cnn_1_load_bias(); // Load bias data of CNN_1
 	// Bring CNN_1 state machine of FaceDetection model into consistent state
@@ -158,6 +161,10 @@ static void run_cnn_1(int x_offset, int y_offset)
     *((volatile uint32_t *) 0x50000000) = 0x00000000;
 	
     //PR_INFO("CNN initialization time : %d", utils_get_time_ms() - pass_time);
+
+    // Switch CNN clock to PLL (200 MHz) div 1
+    MXC_GCR->pclkdiv = (MXC_GCR->pclkdiv & ~(MXC_F_GCR_PCLKDIV_CNNCLKDIV | MXC_F_GCR_PCLKDIV_CNNCLKSEL))
+                     | MXC_S_GCR_PCLKDIV_CNNCLKDIV_DIV4 | MXC_S_GCR_PCLKDIV_CNNCLKSEL_IPLL;
 
     uint8_t* data = raw;
 
@@ -209,19 +216,25 @@ static void run_cnn_1(int x_offset, int y_offset)
     PR_INFO("CNN load data time : %dms", cnn_load_time);
 
     pass_time = utils_get_time_ms();
-
+    
+    int cnn_process_time = 0;
     while (cnn_time == 0)
 		MXC_LP_EnterSleepMode(); // Wait for CNN
+    cnn_process_time = utils_get_time_ms() - pass_time;
+    PR_INFO("CNN process time : %dms", cnn_process_time);
 
     // Switch CNN clock to PLL (200 MHz) div 4
     MXC_GCR->pclkdiv = (MXC_GCR->pclkdiv & ~(MXC_F_GCR_PCLKDIV_CNNCLKDIV | MXC_F_GCR_PCLKDIV_CNNCLKSEL))
-                     | MXC_S_GCR_PCLKDIV_CNNCLKDIV_DIV4 | MXC_S_GCR_PCLKDIV_CNNCLKSEL_IPLL;
+                     | MXC_S_GCR_PCLKDIV_CNNCLKDIV_DIV1 | MXC_S_GCR_PCLKDIV_CNNCLKSEL_IPLL;
 	
 	PR_INFO("CNN wait time : %dms", utils_get_time_ms() - pass_time);
     
     // Inload CNN_1 data is inside get_priors() funtion
+    int post_process_time = utils_get_time_ms();
 	get_priors();
     localize_objects();
+    post_process_time = utils_get_time_ms() - post_process_time;
+    PR_INFO("Post process time : %dms", post_process_time);
 }
 
 #ifdef LP_MODE_ENABLE

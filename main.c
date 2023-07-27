@@ -223,24 +223,6 @@ area_t area_1 = {160, 260, 80, 30};
 area_t area_2 = {0, 260, 80, 30};
 #endif
 // *****************************************************************************
-/*
-void TFT_Print(char *str, int x, int y, int font, int length)
-{
-    text_t text = { .data = str, .len = length };
-
-	y = TFT_HEIGHT - y; //Rotate 90 degrees
-    MXC_TFT_PrintFont(y, x, font, &text, NULL); //Rotate 90 degrees
-
-} */
-
-/*
-void print_xy(unsigned int x, unsigned int y)
-{
-    char buf[16];
-
-    MXC_TFT_ClearScreen();
-    TFT_Print(buf, x, y, font_1, snprintf(buf, sizeof(buf), "(%u,%u)", x, y));
-}*/
 
 
 void WUT_IRQHandler()
@@ -465,7 +447,7 @@ int main(void)
 		}
 		else {
 
-			face_detection();		
+            face_detection();
 
 			if(face_detected)
 			{	

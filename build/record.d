@@ -116,12 +116,13 @@ C:/Users/obuyukso/Desktop/desktop_code/facial_recognition_ai87_mobilefacenet_112
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX78002/uart.h \
  c:\maximsdk\libraries\miscdrivers\camera\camera.h \
  c:\maximsdk\libraries\miscdrivers\camera\ov7692_regs.h include/faceID.h \
- include/facedetection.h include/record.h include/MAXCAM_Debug.h \
- include/cnn_1.h include/cnn_2.h include/cnn_3.h \
+ include/record.h include/MAXCAM_Debug.h include/cnn_1.h include/cnn_2.h \
+ include/cnn_3.h \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX78002/lp.h \
  include/post_process.h \
  c:\maximsdk\tools\gnutools\10.3\arm-none-eabi\include\stdlib.h \
  c:\maximsdk\tools\gnutools\10.3\arm-none-eabi\include\machine\stdlib.h \
  c:\maximsdk\tools\gnutools\10.3\arm-none-eabi\include\alloca.h \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX78002/flc.h \
- include/tft_utils.h include/weights_3.h include/baseaddr.h
+ include/tft_utils.h include/facedetection.h include/weights_3.h \
+ include/baseaddr.h

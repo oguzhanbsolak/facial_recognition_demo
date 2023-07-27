@@ -62,7 +62,7 @@ extern uint32_t ticks_2;
 extern mxc_wut_cfg_t cfg;
 extern area_t area;
 extern volatile uint32_t db_flash_emb_count;
-extern volatile char names[1024][6]; // 1024 names of 6 bytes each, as we support 1024 people in the database
+extern volatile char names[1024][7]; // 1024 names of 6 bytes each, as we support 1024 people in the database
 /************************************ VARIABLES ******************************/
 extern volatile uint32_t cnn_time; // Stopwatch
 
@@ -435,7 +435,6 @@ static void run_cnn_2(int x_offset, int y_offset)
         pr_value = (int8_t)((value >> 24) & 0xff);
         sum += pr_value * pr_value;
     }
-
     b = 1/sqrt(sum);
 
     for (int i =0; i < 16; i++) {
@@ -467,7 +466,8 @@ static void run_cnn_2(int x_offset, int y_offset)
         #else
             output_buffer[i] = (((uint8_t)n4) << 24) | (((uint8_t)n3) << 16) | (((uint8_t)n2) << 8) | ((uint8_t)n1);
         #endif
-    } 
+    }
+    
 
 
     //Dot product cnn state machine configuration
@@ -548,7 +548,7 @@ static void run_cnn_2(int x_offset, int y_offset)
     
     cnn_3_start(); // Start CNN_3
 
-    while (cnn_time == 0)
+    while (cnn_time == 0);
     //    MXC_LP_EnterSleepMode(); // Wait for CNN_3, but not sleep, ISR can't catch it otherwise
 
 

@@ -50,9 +50,3 @@ void draw_obj_rect(float* xy, uint32_t w, uint32_t h)
 	MXC_TFT_Rectangle(x1, y1, x2, y2, FRAME_BLUE);
 #endif
 }
-
-void ssd1306_set_buffer_pixel_util(uint8_t *buf, uint16_t buf_w, uint32_t buf_max, uint16_t x,
-                                   uint16_t y, uint8_t color, uint8_t is_opaque)
-{
-    SSD1306_SET_BUFFER_PIXEL_UTIL(buf, buf_w, buf_max, x, y, color, is_opaque);
-}

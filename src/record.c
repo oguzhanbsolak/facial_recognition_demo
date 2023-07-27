@@ -40,7 +40,6 @@
 #include "utils.h"
 #include "camera.h"
 #include "faceID.h"
-#include "facedetection.h"
 #include "record.h"
 #include "utils.h"
 #include "MAXCAM_Debug.h"
@@ -103,7 +102,7 @@ Example Status Field :
 
 struct person
 {
-    char name[6];
+    char name[7];
     uint32_t id; 
     uint32_t embeddings_count;
     uint32_t db_embeddings_count;
@@ -116,7 +115,7 @@ typedef struct person Person;
 volatile uint32_t isr_cnt;
 volatile uint32_t isr_flags;
 volatile uint32_t db_flash_emb_count;
-volatile char names[1024][6] = {"AshK", "AshK", "AshK", "AshK", "AshK", "AshK", "BradP", "BradP", "BradP", "BradP", "BradP",
+volatile char names[1024][7] = {"AshK", "AshK", "AshK", "AshK", "AshK", "AshK", "BradP", "BradP", "BradP", "BradP", "BradP",
  "BradP","CharT", "CharT", "CharT", "CharT", "CharT", "CharT", "ChrsH", "ChrsH", "ChrsH", "ChrsH", "ChrsH", "ChrsH", "Erman",
 "Erman", "Erman", "Erman", "Erman", "Erman", "MilaK", "MilaK", "MilaK", "MilaK", "MilaK", "MilaK", "OguzB", "OguzB", "OguzB", 
 "OguzB", "OguzB", "OguzB", "ScarJ", "ScarJ" , "ScarJ", "ScarJ", "ScarJ", "ScarJ"}; // 1024 names of 6 bytes each, as we support 1024 people in the database
@@ -160,6 +159,9 @@ void get_name(Person *p)
     int len = 0;
     text_t text_buffer;
     area_t area_buffer;
+    //TODO: Check this if this solves the $ issue
+    for (int i = 0; i < 7; i++)
+        p->name[i] = '\0';
 
 	while (1){
         key = MXC_TS_GetKey();
@@ -183,13 +185,13 @@ void get_name(Person *p)
             MXC_TFT_PrintFont(120, 300, font, &text_buffer, NULL);
         }
         //TODO: No need to reserve a character for null terminator on the flash
-        else if (len < 5) // 6th character is reserved for null terminator 
+        else if (key != 27 &&  len < 6) // 6th character is reserved for null terminator 
         {
-            PR_DEBUG("key: %d\n", key);
+            printf("key: %d\n", key);
             p->name[len] = alphabet[key-1][0];
             len++;
             text_buffer.data = p->name;
-            text_buffer.len  = 6;
+            text_buffer.len  = 7;
             MXC_TFT_PrintFont(120, 300, font, &text_buffer, NULL);
 
         }
@@ -217,7 +219,7 @@ void show_keyboard()
     {
         if (i/4 == 0)
         {
-            MXC_TS_AddButton(25 , 180 - (i%4) * 50, 55, 220 - (i%4) * 50, i + 1);
+            MXC_TS_AddButton(40 , 180 - (i%4) * 50, 70, 220 - (i%4) * 50, i + 1);
             area_buffer.y = 20;
             area_buffer.x = 20 + (i%4) * 50;
             area_buffer.h = 30;
@@ -229,7 +231,7 @@ void show_keyboard()
         }
         else if (i/4 == 1)
         {
-            MXC_TS_AddButton(65 , 180 - (i%4) * 50, 95, 220 - (i%4) * 50, i + 1);
+            MXC_TS_AddButton(80 , 180 - (i%4) * 50, 110, 220 - (i%4) * 50, i + 1);
             area_buffer.y = 60;
             area_buffer.x = 20 + (i%4) * 50;
             area_buffer.h = 30;
@@ -241,7 +243,7 @@ void show_keyboard()
         }
         else if (i/4 == 2)
         {
-            MXC_TS_AddButton(105 , 180 - (i%4) * 50, 135, 220 - (i%4) * 50, i + 1);
+            MXC_TS_AddButton(120 , 180 - (i%4) * 50, 150, 220 - (i%4) * 50, i + 1);
             area_buffer.y = 100;
             area_buffer.x = 20 + (i%4) * 50;
             area_buffer.h = 30;
@@ -253,7 +255,7 @@ void show_keyboard()
         }
         else if (i/4 == 3)
         {
-            MXC_TS_AddButton(145 , 180 - (i%4) * 50, 175, 220 - (i%4) * 50, i + 1);
+            MXC_TS_AddButton(155 , 180 - (i%4) * 50, 185, 220 - (i%4) * 50, i + 1);
             area_buffer.y = 140;
             area_buffer.x = 20 + (i%4) * 50;
             area_buffer.h = 30;
@@ -265,7 +267,7 @@ void show_keyboard()
         }
         else if (i/4 == 4)
         {
-            MXC_TS_AddButton(185 , 180 - (i%4) * 50, 215, 220 - (i%4) * 50, i + 1);
+            MXC_TS_AddButton(190 , 180 - (i%4) * 50, 220, 220 - (i%4) * 50, i + 1);
             area_buffer.y = 180;
             area_buffer.x = 20 + (i%4) * 50;
             area_buffer.h = 30;
@@ -289,7 +291,7 @@ void show_keyboard()
         }
         else if (i/4 == 6)
         {
-            MXC_TS_AddButton(265 , 180 - (i%4) * 50, 295, 220 - (i%4) * 50, i + 1);
+            MXC_TS_AddButton(260 , 180 - (i%4) * 50, 290, 220 - (i%4) * 50, i + 1);
             area_buffer.y = 260;
             area_buffer.x = 20 + (i%4) * 50;
             area_buffer.h = 30;
@@ -347,6 +349,7 @@ void read_db(Person *p)
     p->name[3] = (first_info) & 0xFF;
     p->name[4] = (second_info >> 24) & 0xFF;
     p->name[5] = (second_info >> 16) & 0xFF;
+    p->name[6] = '\0';
     p->id = (second_info >> 4) & 0xFFF;
     p->embeddings_count = (second_info) & 0xF;
         
@@ -719,6 +722,12 @@ int add_person(Person *p)
 
      for (int i = 0; i < 16; i++) {
 
+         //TODO: THINK THIS AND FACTOR:256 SHIFT EMB
+        if (output_buffer[i] >= 128)
+            output_buffer[i] = 256 - ((256 - output_buffer[i]) * CNN_3_OUTPUT_SHIFT);
+        else
+            output_buffer[i] = output_buffer[i] * CNN_3_OUTPUT_SHIFT;
+
         PR_DEBUG("Writing buffer value 0x%x to address 0x%x...\n",  output_buffer[i], write_address + ((i+2) * 4)); // 2 for the name and length field
         
 
@@ -751,7 +760,9 @@ int add_person(Person *p)
     text_buffer.data = "Exit";
     text_buffer.len  = 4;
     MXC_TFT_PrintFont(162, 270, font, &text_buffer, NULL);
-
+    MXC_Delay(MSEC(1000));
+    key = 0;
+    capture_key = 0;
     while(!capture_key)
 		{	
         #ifdef TS_ENABLE
@@ -842,6 +853,9 @@ void flash_to_cnn(Person *p, uint32_t cnn_location)
 
         }
 
+       
+
+
         if (write_offset == 0){
 
             write_buffer[0] = emb | (kernel_buffer[1] >> 8); // kernel buffer 0 is always in a shape of 0x000000XX
@@ -900,7 +914,7 @@ void flash_to_cnn(Person *p, uint32_t cnn_location)
 
     }
 
-    for (int k = 0; k < 6; k++) //TODO: Optimize this, memcpy?
+    for (int k = 0; k < 7; k++) //TODO: Optimize this, memcpy?
             {
                  names[cnn_location][k] = p->name[k]; // Populate the names array for post processing
             }
@@ -951,6 +965,7 @@ int record()
 
     Person p;
     Person *pptr = &p;
+    text_t text_buffer;
 
     setup_irqs(); // See notes in function definition
 
@@ -1008,6 +1023,7 @@ int record()
     PR_DEBUG("Total embeddings: %d\n", pptr->db_embeddings_count);
 
     err = add_person(pptr);
+    //cnn_verify_weights();
     if (err == -1) { //TODO: change this to a way to exit to main menu
             err = update_status(pptr);
             if (err) {
@@ -1019,6 +1035,31 @@ int record()
             MXC_ICC_Enable(MXC_ICC0);
             printf("Successfully verified test pattern!\n\n");
             return err; }
+    else if (err == -7) //Write exception handler
+    {   
+        MXC_TFT_ClearScreen();
+        text_buffer.data = "DB Corrupted, Reinitializing";
+        text_buffer.len  = 29;
+        MXC_TFT_PrintFont(0, 270, font, &text_buffer, NULL);
+        PR_DEBUG("Database Corrupted\n");
+        err = init_db();
+        if (err) {
+        printf("Failed to initialize database", err);
+        return err; }
+        err = init_status();
+        if (err) {
+        printf("Failed to initialize status", err);
+        return err; }
+
+        // Reload default weights
+        cnn_3_load_weights();
+        cnn_3_configure();
+
+        MXC_TFT_ClearScreen();
+
+
+    }
+    
     else if (err != 0) {
             printf("Failed to add person", err);
             return err; }  

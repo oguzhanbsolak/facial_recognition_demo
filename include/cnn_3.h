@@ -33,6 +33,7 @@ typedef int16_t q15_t;
 
 /* Number of outputs for this network */
 #define CNN_3_NUM_OUTPUTS 1024
+#define CNN_3_OUTPUT_SHIFT 2
 
 #define Threshold 50
 
