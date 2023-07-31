@@ -32,7 +32,6 @@
  * ownership rights.
  *******************************************************************************/
 #include "post_process.h"
-#include "tft_utils.h"
 #include "facedetection.h"
 #include "utils.h"
 #include "mxc_device.h"
@@ -475,9 +474,9 @@ void localize_objects(void)
                 box[3] = (uint8_t)(IMAGE_SIZE_Y * xy[3]);
 
                 int x1 = X_START + box[0];
-                int x2 = X_START + box[2];
+                int x2 = X_START + box[2] - 1;
                 int y1 = Y_START + box[1];
-                int y2 = Y_START + box[3];
+                int y2 = Y_START + box[3] - 1;
 
 	            MXC_TFT_Rectangle(x1, y1, x2, y2, 0xFD20);
 				
@@ -507,10 +506,16 @@ void localize_objects(void)
 		box[0] = (uint8_t)(IMAGE_SIZE_X * max_xy[0]);
 		box[1] = (uint8_t)(IMAGE_SIZE_Y * max_xy[1]);
 		box[2] = (uint8_t)(IMAGE_SIZE_X * max_xy[2]);
-		box[3] = (uint8_t)(IMAGE_SIZE_Y * max_xy[3]);		
+		box[3] = (uint8_t)(IMAGE_SIZE_Y * max_xy[3]);	
 
+        int x1 = X_START + box[0];
+        int x2 = X_START + box[2] - 1;
+        int y1 = Y_START + box[1];
+        int y2 = Y_START + box[3] - 1;
+
+	    MXC_TFT_Rectangle(x1, y1, x2, y2, 0xFD20);
 		face_detected = 1;
-		draw_obj_rect(max_xy, IMAGE_SIZE_X, IMAGE_SIZE_Y);
+		//draw_obj_rect(max_xy, IMAGE_SIZE_X, IMAGE_SIZE_Y);
     }
     #endif
 

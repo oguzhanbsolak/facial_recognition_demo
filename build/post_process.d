@@ -40,7 +40,7 @@ C:/Users/obuyukso/Desktop/desktop_code/facial_recognition_ai87_mobilefacenet_112
  c:\maximsdk\tools\gnutools\10.3\arm-none-eabi\include\machine\types.h \
  c:\maximsdk\tools\gnutools\10.3\arm-none-eabi\include\sys\stdio.h \
  c:\maximsdk\tools\gnutools\10.3\arm-none-eabi\include\math.h \
- include/tft_utils.h include/facedetection.h include/utils.h \
+ include/facedetection.h include/utils.h \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX78002/uart.h \
  C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX78002/Include/uart_regs.h \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX78002/mxc_sys.h \

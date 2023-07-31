@@ -124,5 +124,4 @@ C:/Users/obuyukso/Desktop/desktop_code/facial_recognition_ai87_mobilefacenet_112
  c:\maximsdk\tools\gnutools\10.3\arm-none-eabi\include\machine\stdlib.h \
  c:\maximsdk\tools\gnutools\10.3\arm-none-eabi\include\alloca.h \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX78002/flc.h \
- include/tft_utils.h include/facedetection.h include/weights_3.h \
- include/baseaddr.h
+ include/facedetection.h include/weights_3.h include/baseaddr.h

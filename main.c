@@ -340,9 +340,7 @@ int main(void)
         PR_ERR("Error returned from setting up camera. Error %d\n", ret);
         return -1;
     }
-	PR_DEBUG("b flip");
 	camera_set_vflip(0);
-	PR_DEBUG("a flip");
 
 #ifdef TFT_ENABLE
     /* Initialize TFT display */
@@ -420,23 +418,9 @@ int main(void)
 			record_mode = 1;
 		}
 
-			/*if (MXC_TS_GetTSEvent()) {
-            	MXC_TS_ClearTSEvent();
-            	MXC_TS_GetXY(&touch_x, &touch_y); //TS Rotate 90 degree
-				PR_DEBUG("Touch X: %d, Y: %d\n", touch_x, touch_y);
-
-				if (touch_x > 0 && touch_x < 80 && touch_y > 0 && touch_y < 80) // button for now
-				{ 
-					record_mode = 1;
-				}
-
-
-            //print_xy(touch_x, touch_y);
-        	}*/
 		#endif 
 		if (record_mode)
 		{
-			//printf("record mode\n");
 			
 			record();
 			// Delay for 0.5 seconds before continuing
@@ -456,7 +440,6 @@ int main(void)
 				face_detected = 0;
 			}
 
-			//#if 1
 			#ifdef TFT_ENABLE
 			else
 			{

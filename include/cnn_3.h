@@ -35,7 +35,7 @@ typedef int16_t q15_t;
 #define CNN_3_NUM_OUTPUTS 1024
 #define CNN_3_OUTPUT_SHIFT 2
 
-#define Threshold 50
+#define Threshold 72
 
 /* Stopwatch - holds the runtime when accelerator finishes */
 extern volatile uint32_t cnn_time;

@@ -52,7 +52,6 @@
 #include "math.h"
 #include "post_process.h"
 #include "flc.h"
-#include "tft_utils.h"
 #include "faceID.h"
 #include "facedetection.h"
 #include "weights_3.h"
@@ -118,7 +117,7 @@ volatile uint32_t db_flash_emb_count;
 volatile char names[1024][7] = {"AshK", "AshK", "AshK", "AshK", "AshK", "AshK", "BradP", "BradP", "BradP", "BradP", "BradP",
  "BradP","CharT", "CharT", "CharT", "CharT", "CharT", "CharT", "ChrsH", "ChrsH", "ChrsH", "ChrsH", "ChrsH", "ChrsH", "Erman",
 "Erman", "Erman", "Erman", "Erman", "Erman", "MilaK", "MilaK", "MilaK", "MilaK", "MilaK", "MilaK", "OguzB", "OguzB", "OguzB", 
-"OguzB", "OguzB", "OguzB", "ScarJ", "ScarJ" , "ScarJ", "ScarJ", "ScarJ", "ScarJ"}; // 1024 names of 6 bytes each, as we support 1024 people in the database
+"OguzB", "OguzB", "OguzB", "ScarJ", "ScarJ" , "ScarJ", "ScarJ", "ScarJ", "ScarJ"}; // 1024 names of 7 bytes each, as we support 1024 people in the database
 extern volatile int32_t output_buffer[16];
 extern unsigned int touch_x, touch_y;
 extern volatile uint8_t face_detected;
@@ -161,7 +160,7 @@ void get_name(Person *p)
     area_t area_buffer;
     //TODO: Check this if this solves the $ issue
     for (int i = 0; i < 7; i++)
-        p->name[i] = '\0';
+        {p->name[i] = '\0';}
 
 	while (1){
         key = MXC_TS_GetKey();
@@ -625,6 +624,8 @@ int add_person(Person *p)
     text_buffer.len  = 7;
     MXC_TFT_PrintFont(0, 270, font, &text_buffer, NULL);
     //TODO: Get user's feedback for the captured image
+    // Re-enable the ICC
+    MXC_ICC_Enable(MXC_ICC0);
     while (!face_ok)
     {   
         init_faceid = 0;
@@ -663,6 +664,7 @@ int add_person(Person *p)
         face_detected = 0;
 
         show_face();
+        
 
         if (!init_reshow)
         {
@@ -682,7 +684,7 @@ int add_person(Person *p)
         MXC_TFT_PrintFont(162, 270, font, &text_buffer, NULL);
         init_reshow = 1;
         }       
-
+        
         //Show captured face
         
         // Ask user if he/she is ok with the image
@@ -707,7 +709,7 @@ int add_person(Person *p)
     }
     face_ok = 0;
     capture_key = 0;
-
+    MXC_ICC_Disable(MXC_ICC0); //Disable ICC for flash write
     face_id();
 
      PR_DEBUG("This is record\n");
@@ -760,7 +762,9 @@ int add_person(Person *p)
     text_buffer.data = "Exit";
     text_buffer.len  = 4;
     MXC_TFT_PrintFont(162, 270, font, &text_buffer, NULL);
+    
     MXC_Delay(MSEC(1000));
+    key = MXC_TS_GetKey(); //Dumb Buffer
     key = 0;
     capture_key = 0;
     while(!capture_key)
@@ -837,7 +841,7 @@ void flash_to_cnn(Person *p, uint32_t cnn_location)
     for (int base_id = 0; base_id < EMBEDDING_SIZE; base_id++){
     
         //emb = (emb_buffer[base_id/4] >> (8 * (base_id % 4))) & 0x000000FF;
-        emb = (emb_buffer[base_id/4] << (8 * (3 - (base_id % 4)))) & 0xFF000000; // 0xYYZZWWXX -> 0xXX000000, 0xYY000000, 0xZZ000000, 0xWW000000
+        emb = (emb_buffer[base_id/4] << (8 * (3 - (base_id % 4)))) & 0xFF000000; // 0xYYZZWWXX -> 0xXX000000, 0xWW000000, 0xZZ000000, 0xYY000000
         PR_DEBUG("Emb value: 0x%x\n", emb);
         kernel_addr = (volatile uint32_t *)(baseaddr[base_id] + block_id * 4);
         

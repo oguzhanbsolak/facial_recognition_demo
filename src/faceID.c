@@ -241,13 +241,9 @@ uint8_t* raw;
 	x2 = x1 + WIDTH_ID;
 	y2 = y1 + HEIGHT_ID; */
 	// Draw rectangle around face
-    x1 = X_START + box[0];
-    x2 = X_START + box[2];
-    y1 = Y_START + box[1];
-    y2 = Y_START + box[3];
-
-	MXC_TFT_Rectangle(x1, y1, x2, y2, FRAME_ORANGE);
-
+    
+   
+    
     int ret;
     int lum;
     text_t printResult;
