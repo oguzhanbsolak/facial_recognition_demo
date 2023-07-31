@@ -18,7 +18,6 @@ override BOARD=EvKit_V1
 $(warning Warning: This project is forced to compile for the EvKit_V1 board only!)
 
 $(info Note: This project is designed and tested for the NewHaven NHD-2.4 screen only!)
-
 #LIB_LVGL = 1
 #TFT = ADAFRUIT
 TFT=NEWHAVEN

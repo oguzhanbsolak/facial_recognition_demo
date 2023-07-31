@@ -55,12 +55,12 @@ C:/Users/obuyukso/Desktop/desktop_code/facial_recognition_ai87_mobilefacenet_112
  c:\maximsdk\tools\gnutools\10.3\arm-none-eabi\include\sys\stdio.h \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX78002/spi.h \
  C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX78002/Include/spi_regs.h \
- c:\maximsdk\libraries\miscdrivers\display\tft_st7789v.h \
- c:\maximsdk\libraries\miscdrivers\touchscreen\tsc2046.h \
- C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX78002/gpio.h \
  c:\maximsdk\libraries\miscdrivers\led\led.h \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX78002/mxc_assert.h \
+ C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX78002/gpio.h \
  c:\maximsdk\libraries\miscdrivers\pushbutton\pb.h \
+ c:\maximsdk\libraries\miscdrivers\display\tft_st7789v.h \
+ c:\maximsdk\libraries\miscdrivers\touchscreen\tsc2046.h \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX78002/adc.h \
  C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX78002/Include/adc_regs.h \
  C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX78002/Include/mcr_regs.h \

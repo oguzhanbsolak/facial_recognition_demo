@@ -488,12 +488,12 @@ void FLC0_IRQHandler()
 
     if (temp & MXC_F_FLC_INTR_DONE) {
         MXC_FLC0->intr &= ~MXC_F_FLC_INTR_DONE;
-        printf(" -> Interrupt! (Flash operation done)\n\n");
+        PR_DEBUG(" -> Interrupt! (Flash operation done)\n\n");
     }
 
     if (temp & MXC_F_FLC_INTR_AF) {
         MXC_FLC0->intr &= ~MXC_F_FLC_INTR_AF;
-        printf(" -> Interrupt! (Flash access failure)\n\n");
+        PR_DEBUG(" -> Interrupt! (Flash access failure)\n\n");
     }
 
     isr_flags = temp;
@@ -589,8 +589,13 @@ void show_face()
             img_buffer[(j  * BYTE_PER_PIXEL * HEIGHT_ID) +  (i  * BYTE_PER_PIXEL) + 1] = data[((x1 + x_loc)  * BYTE_PER_PIXEL * HEIGHT_DET) + ((y1 + y_loc) * BYTE_PER_PIXEL) + 1]; }
     }
 
-
-    MXC_TFT_ShowImageCameraRGB565(SHOW_START_X, SHOW_START_Y, img_ptr, HEIGHT_ID, WIDTH_ID);
+    MXC_TFT_SetRotation(ROTATE_270);
+    MXC_TFT_Stream(SHOW_START_X, SHOW_START_Y, HEIGHT_ID, WIDTH_ID);
+    // Stream captured image to TFT display
+    TFT_SPI_Transmit(img_ptr, HEIGHT_ID * WIDTH_ID * 2);
+    MXC_TFT_SetRotation(ROTATE_180);
+     // Delay to allow TFT to finish writing
+    //MXC_TFT_ShowImageCameraRGB565(SHOW_START_X, SHOW_START_Y, img_ptr, HEIGHT_ID, WIDTH_ID);
 
 
 }
@@ -633,6 +638,7 @@ int add_person(Person *p)
 		{	
 			if (!init_faceid)
             {   
+                
                 MXC_TFT_ClearScreen(); 
                 MXC_TS_RemoveAllButton();
                 MXC_TS_AddButton(260, 160, 320, 240, 2);	
@@ -648,6 +654,7 @@ int add_person(Person *p)
             #ifdef TS_ENABLE
                 key = MXC_TS_GetKey();		       
                 if (key == 2) {
+                    printf("Capture");
                     capture_key = 1;                    
                     MXC_TFT_FillRect(&area_2, 0x9D20);
                     text_buffer.data = "Capture";

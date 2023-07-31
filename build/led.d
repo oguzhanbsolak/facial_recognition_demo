@@ -55,6 +55,8 @@ C:/Users/obuyukso/Desktop/desktop_code/facial_recognition_ai87_mobilefacenet_112
  C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX78002/Include/gcr_regs.h \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX78002/mxc_assert.h \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX78002/mxc_lock.h \
+ c:\maximsdk\libraries\miscdrivers\led\led.h \
+ c:\maximsdk\libraries\miscdrivers\pushbutton\pb.h \
+ C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX78002/gpio.h \
  c:\maximsdk\libraries\miscdrivers\display\tft_st7789v.h \
- c:\maximsdk\libraries\miscdrivers\touchscreen\tsc2046.h \
- C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX78002/gpio.h
+ c:\maximsdk\libraries\miscdrivers\touchscreen\tsc2046.h

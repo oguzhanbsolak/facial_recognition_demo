@@ -63,8 +63,11 @@
 #include "record.h"
 #include "gpio.h"
 #include "pb.h"
+#include "utils.h"
 
 #define CONSOLE_BAUD  115200
+
+
 
 #define MXC_GPIO_PORT_INTERRUPT_IN MXC_GPIO2
 #define MXC_GPIO_PIN_INTERRUPT_IN MXC_GPIO_PIN_7
@@ -402,7 +405,7 @@ int main(void)
     NVIC_EnableIRQ(WUT_IRQn);
 #endif
     while (1) {
-		
+		int loop_time = utils_get_time_ms();
 		#ifdef TS_ENABLE //TODO: update here for record mode
 		if (after_record){
 			after_record = 0;
@@ -448,7 +451,8 @@ int main(void)
 			#endif
 
 		}
-		
+		loop_time = utils_get_time_ms() - loop_time;
+		printf("Loop time: %dms\n", loop_time);
 		
     }
 

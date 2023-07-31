@@ -143,7 +143,13 @@ static void run_cnn_1(int x_offset, int y_offset)
     camera_get_image(&raw, &imgLen, &w, &h);
     #ifdef TFT_ENABLE
     int tft_time = utils_get_time_ms();
-    MXC_TFT_ShowImageCameraRGB565(X_START, Y_START, raw, w, h);
+    //MXC_TFT_ShowImageCameraRGB565(X_START, Y_START, raw, w, h);
+    MXC_TFT_SetRotation(ROTATE_270);
+    MXC_TFT_Stream(X_START, Y_START, w, h);
+    // Stream captured image to TFT display
+    TFT_SPI_Transmit(raw, w * h * 2);
+    MXC_TFT_SetRotation(ROTATE_180);
+		
     tft_time = utils_get_time_ms() - tft_time;
     PR_INFO("TFT Time : %dms", tft_time);
     #endif

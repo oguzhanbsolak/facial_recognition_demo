@@ -56,17 +56,17 @@ C:/Users/obuyukso/Desktop/desktop_code/facial_recognition_ai87_mobilefacenet_112
  C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX78002/Include/gcr_regs.h \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX78002/mxc_assert.h \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX78002/mxc_lock.h \
+ c:\maximsdk\libraries\miscdrivers\led\led.h \
+ C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX78002/mxc_assert.h \
+ C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX78002/gpio.h \
+ c:\maximsdk\libraries\miscdrivers\pushbutton\pb.h \
  c:\maximsdk\libraries\miscdrivers\display\tft_st7789v.h \
  c:\maximsdk\libraries\miscdrivers\touchscreen\tsc2046.h \
- C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX78002/gpio.h \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX78002/mxc_device.h \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX78002/mxc_delay.h \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX78002/mxc.h \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX78002/mxc_delay.h \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX78002/nvic_table.h \
- c:\maximsdk\libraries\miscdrivers\led\led.h \
- C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX78002/mxc_assert.h \
- c:\maximsdk\libraries\miscdrivers\pushbutton\pb.h \
  C:/MaximSDK/Libraries/PeriphDrivers/Include/MAX78002/adc.h \
  C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX78002/Include/adc_regs.h \
  C:/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX78002/Include/mcr_regs.h \
