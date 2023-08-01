@@ -145,9 +145,11 @@ static void run_cnn_1(int x_offset, int y_offset)
     int tft_time = utils_get_time_ms();
     //MXC_TFT_ShowImageCameraRGB565(X_START, Y_START, raw, w, h);
     MXC_TFT_SetRotation(ROTATE_270);
-    MXC_TFT_Stream(X_START, Y_START, w, h);
+    __disable_irq(); 	// Disable IRQ to block communication with touch screen 
+	MXC_TFT_Stream(X_START, Y_START, w, h);
     // Stream captured image to TFT display
     TFT_SPI_Transmit(raw, w * h * 2);
+	__enable_irq(); 	// Enable IRQ to resume communication with touch screen 
     MXC_TFT_SetRotation(ROTATE_180);
 		
     tft_time = utils_get_time_ms() - tft_time;

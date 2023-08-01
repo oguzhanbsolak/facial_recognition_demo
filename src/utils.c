@@ -46,16 +46,11 @@
 
 uint32_t utils_get_time_ms(void)
 {
-    int sec;
-    double subsec;
-    uint32_t ms;
+   uint32_t sec, ssec;
 
-    subsec = MXC_RTC_GetSubSecond() / 4096.0;
-    sec    = MXC_RTC_GetSecond();
-
-    ms = (sec * 1000) + (int)(subsec * 1000);
-
-    return ms;
+    MXC_RTC_GetSeconds(&sec);
+    MXC_RTC_GetSubSeconds(&ssec);
+    return sec * 1000 + ((ssec * 125) >> 9);
 }
 
 static void utils_send_byte(mxc_uart_regs_t* uart, uint8_t value)

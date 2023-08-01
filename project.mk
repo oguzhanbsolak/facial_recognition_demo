@@ -24,6 +24,7 @@ TFT=NEWHAVEN
 # Place build files specific to EvKit_V1 here.
 ifeq "$(BOARD)" "EvKit_V1"
 PROJ_CFLAGS+=-DTFT_ENABLE
+PROJ_CFLAGS+=-DTS_ENABLE
 IPATH += TFT/fthr
 VPATH += TFT/fthr
 endif

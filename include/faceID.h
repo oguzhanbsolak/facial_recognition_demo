@@ -35,7 +35,6 @@
 #define _FACEID_H_
 
 #define USE_BOX_ONLY
-#define TS_ENABLE
 //#define UNNORMALIZE_RECORD // Do not normalize the recorded embeddings
 
 #define RED_LED     0
