@@ -468,15 +468,15 @@ void localize_objects(void)
 			    
 			    box_sanity_check(&xy[0]);
             
-                box[0] = (uint8_t)(IMAGE_SIZE_X * xy[0]);
-                box[1] = (uint8_t)(IMAGE_SIZE_Y * xy[1]);
-                box[2] = (uint8_t)(IMAGE_SIZE_X * xy[2]);
-                box[3] = (uint8_t)(IMAGE_SIZE_Y * xy[3]);
+                box[0] = (uint8_t)(WIDTH_DET * xy[0]);
+                box[1] = (uint8_t)(HEIGHT_DET * xy[1]);
+                box[2] = (uint8_t)(WIDTH_DET * xy[2]);
+                box[3] = (uint8_t)(HEIGHT_DET * xy[3]);
 
-				int x1 = IMAGE_SIZE_Y * (xy[1]) + X_START;
-				int y1 = IMAGE_SIZE_X * (xy[2]) + Y_START - 1;
-				int x2 = IMAGE_SIZE_Y * (xy[3]) + X_START - 1;
-				int y2 = IMAGE_SIZE_X * (xy[0]) + Y_START;
+				int x1 = HEIGHT_DET * (xy[1]) + X_START;
+				int y1 = WIDTH_DET * (xy[2]) + Y_START - 1;
+				int x2 = HEIGHT_DET * (xy[3]) + X_START - 1;
+				int y2 = WIDTH_DET * (xy[0]) + Y_START;
 
 				MXC_TFT_SetRotation(ROTATE_270);
 	            MXC_TFT_Rectangle(x1, y1, x2, y2, 0xFD20);
@@ -491,7 +491,7 @@ void localize_objects(void)
 			    //PR_DEBUG("width:%d heigth:%d\n", box[2] - box[0], box[3] - box[1]);
 #endif 
                 face_detected = 1;
-				//draw_obj_rect(xy, IMAGE_SIZE_X, IMAGE_SIZE_Y);
+				//draw_obj_rect(xy, WIDTH_DET, HEIGHT_DET);
                 #endif
             }
         }
@@ -505,21 +505,21 @@ void localize_objects(void)
 				"%.2f \n",
 				class_idx + 1, prior_idx, global_prior_idx, max_xy[0], max_xy[1], max_xy[2], max_xy[3]);
 					
-		box[0] = (uint8_t)(IMAGE_SIZE_X * max_xy[0]);
-		box[1] = (uint8_t)(IMAGE_SIZE_Y * max_xy[1]);
-		box[2] = (uint8_t)(IMAGE_SIZE_X * max_xy[2]);
-		box[3] = (uint8_t)(IMAGE_SIZE_Y * max_xy[3]);	
+		box[0] = (uint8_t)(WIDTH_DET * max_xy[0]);
+		box[1] = (uint8_t)(HEIGHT_DET * max_xy[1]);
+		box[2] = (uint8_t)(WIDTH_DET * max_xy[2]);
+		box[3] = (uint8_t)(HEIGHT_DET * max_xy[3]);	
 
-		int x1 = IMAGE_SIZE_Y * (xy[1]) + X_START;
-		int y1 = IMAGE_SIZE_X * (xy[2]) + Y_START - 1;
-		int x2 = IMAGE_SIZE_Y * (xy[3]) + X_START - 1;
-		int y2 = IMAGE_SIZE_X * (xy[0]) + Y_START;
+		int x1 = HEIGHT_DET * (xy[1]) + X_START;
+		int y1 = WIDTH_DET * (xy[2]) + Y_START - 1;
+		int x2 = HEIGHT_DET * (xy[3]) + X_START - 1;
+		int y2 = WIDTH_DET * (xy[0]) + Y_START;
 
 		MXC_TFT_SetRotation(ROTATE_270);
 	    MXC_TFT_Rectangle(x1, y1, x2, y2, 0xFD20);
 		MXC_TFT_SetRotation(ROTATE_180);
 		face_detected = 1;
-		//draw_obj_rect(max_xy, IMAGE_SIZE_X, IMAGE_SIZE_Y);
+		//draw_obj_rect(max_xy, WIDTH_DET, HEIGHT_DET);
     }
     #endif
 

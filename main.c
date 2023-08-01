@@ -221,7 +221,7 @@ void gpio_isr_2(void *cbdata)
 }
 
 #ifdef TFT_ENABLE
-area_t area = {100, 290, 200, 30};
+area_t area = {0, 290, 240, 30};
 area_t area_1 = {160, 260, 80, 30};
 area_t area_2 = {0, 260, 80, 30};
 #endif
@@ -282,7 +282,6 @@ int main(void)
     cnn_2_configure(); // Configure CNN_2 layers
 
 	cnn_3_load_weights(); // Load kernels of CNN_3
-	//TODO: immplement reload_cnn() in a way that it includes new people in addition to the default ones
 	//reload_cnn(); // Reload CNN_3 weights with new data from flash
   	cnn_3_load_bias(); // Load bias data of CNN_3
   	cnn_3_configure(); // Configure CNN_3 layers
@@ -336,7 +335,7 @@ int main(void)
 #endif
 	
     // Setup the camera image dimensions, pixel format and data acquiring details.
-    ret = camera_setup(IMAGE_XRES, IMAGE_YRES, PIXFORMAT_RGB565, FIFO_FOUR_BYTE, USE_DMA,
+    ret = camera_setup(HEIGHT_DET, WIDTH_DET, PIXFORMAT_RGB565, FIFO_FOUR_BYTE, USE_DMA,
                        dma_channel);
 
     if (ret != STATUS_OK) {
@@ -346,12 +345,8 @@ int main(void)
 	camera_set_vflip(0);
 
 #ifdef TFT_ENABLE
-    /* Initialize TFT display */
-    //MXC_TFT_Init(MXC_SPI0, 1, NULL, NULL);
-	
-	PR_DEBUG("TFT flip");
+    /* Initialize TFT display */	
 	MXC_TFT_Init(NULL, NULL);
-	PR_DEBUG("TFT INIT");
     MXC_TFT_SetRotation(ROTATE_180);
     MXC_TFT_SetBackGroundColor(4);
     MXC_TFT_SetForeGroundColor(WHITE); // set font color to white
@@ -359,7 +354,6 @@ int main(void)
 		MXC_TS_Init();	
     	MXC_TS_Start();
 		
-		//MXC_TFT_FillRect(&area_2, 0xFD20);
 	#else
 		mxc_gpio_cfg_t gpio_interrupt;
 		gpio_interrupt.port = MXC_GPIO_PORT_INTERRUPT_IN;
@@ -406,7 +400,7 @@ int main(void)
 #endif
     while (1) {
 		int loop_time = utils_get_time_ms();
-		#ifdef TS_ENABLE //TODO: update here for record mode
+		#ifdef TS_ENABLE
 		if (after_record){
 			after_record = 0;
 			MXC_TS_AddButton(260, 0, 290, 80, 1);
@@ -427,7 +421,6 @@ int main(void)
 			
 			record();
 			// Delay for 0.5 seconds before continuing
-			//TODO: More elegant way to do this
 			MXC_Delay(MXC_DELAY_MSEC(500));
 			record_mode = 0;
 			after_record = 1;

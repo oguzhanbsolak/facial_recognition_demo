@@ -124,6 +124,7 @@ extern volatile uint8_t face_detected;
 extern volatile uint8_t capture_key;
 extern volatile uint8_t record_mode;
 volatile uint8_t face_ok = 0;
+extern area_t area;
 extern area_t area_1;
 extern area_t area_2;
 extern uint8_t box[4]; // x1, y1, x2, y2 
@@ -158,7 +159,6 @@ void get_name(Person *p)
     int len = 0;
     text_t text_buffer;
     area_t area_buffer;
-    //TODO: Check this if this solves the $ issue
     for (int i = 0; i < 7; i++)
         {p->name[i] = '\0';}
 
@@ -183,8 +183,7 @@ void get_name(Person *p)
             MXC_TFT_ClearArea(&area_buffer, 4);
             MXC_TFT_PrintFont(120, 300, font, &text_buffer, NULL);
         }
-        //TODO: No need to reserve a character for null terminator on the flash
-        else if (key != 27 &&  len < 6) // 6th character is reserved for null terminator 
+        else if (key != 27 &&  len < 6) // 7th character is reserved for null terminator 
         {
             printf("key: %d\n", key);
             p->name[len] = alphabet[key-1][0];
@@ -458,7 +457,7 @@ int update_info_field(Person *p)
     NNNNIIIL Second info field
     */
  
-    info_address = (DB_ADDRESS + 4) + ((p->id - 1) * 4 * 2) + (p->db_embeddings_count * 64); //TODO : Control total emb and emb in a more elegant way
+    info_address = (DB_ADDRESS + 4) + ((p->id - 1) * 4 * 2) + (p->db_embeddings_count * 64);
 
     first_info = (p->name[0] << 24) | (p->name[1] << 16) | (p->name[2] << 8) | (p->name[3]);
 
@@ -590,12 +589,12 @@ void show_face()
     }
 
     MXC_TFT_SetRotation(ROTATE_270);
+    __disable_irq(); 	// Disable IRQ to block communication with touch screen 
     MXC_TFT_Stream(SHOW_START_X, SHOW_START_Y, HEIGHT_ID, WIDTH_ID);
     // Stream captured image to TFT display
     TFT_SPI_Transmit(img_ptr, HEIGHT_ID * WIDTH_ID * 2);
+    __enable_irq(); 	// Enable IRQ to resume communication with touch screen 
     MXC_TFT_SetRotation(ROTATE_180);
-     // Delay to allow TFT to finish writing
-    //MXC_TFT_ShowImageCameraRGB565(SHOW_START_X, SHOW_START_Y, img_ptr, HEIGHT_ID, WIDTH_ID);
 
 
 }
@@ -605,18 +604,18 @@ int add_person(Person *p)
     int err = 0;
     int init_reshow = 0;
     int init_faceid = 0;
+    int init_come_closer = 0;
     face_detected = 0;
     text_t text_buffer;
-    area_t area_buffer;
 
     if (p->embeddings_count == 0) {
         PR_DEBUG("Enter name: ");
         #ifdef TS_ENABLE
-            get_name(p);
+            get_name(p); // Get the name from TS
         #else
             scanf("%5s", p->name);
         #endif
-        PR_DEBUG("Name entered: %s\n", p->name); //TODO:Get the name from TS
+        PR_DEBUG("Name entered: %s\n", p->name);
     }
 
     
@@ -628,10 +627,9 @@ int add_person(Person *p)
     text_buffer.data = "Capture";
     text_buffer.len  = 7;
     MXC_TFT_PrintFont(0, 270, font, &text_buffer, NULL);
-    //TODO: Get user's feedback for the captured image
     // Re-enable the ICC
     MXC_ICC_Enable(MXC_ICC0);
-    while (!face_ok)
+    while (!face_ok) // Get user's feedback for the captured image
     {   
         init_faceid = 0;
         while(!face_detected || !capture_key)
@@ -650,11 +648,35 @@ int add_person(Person *p)
             }
 
             face_detection();
+            if (face_detected)
+            {
+                printf("Box width: %d\n", box[2] - box[0]);
+                printf("Box height: %d\n", box[3] - box[1]);
+                if ((box[2] - box[0]) < 90 || (box[3] - box[1]) < 130)
+                {
+                    face_detected = 0;
+
+                    if(!init_come_closer)
+                    {
+                    text_buffer.data = "Come Closer";
+                    text_buffer.len  = 11;
+                    MXC_TFT_PrintFont(60, 300, font, &text_buffer, NULL);
+                    init_come_closer = 1;
+                    }
+
+                    continue;
+                }
+                else
+                {
+                    MXC_TFT_ClearArea(&area, 4);
+                    init_come_closer = 0;
+                                    }
+            }
+            
 
             #ifdef TS_ENABLE
                 key = MXC_TS_GetKey();		       
                 if (key == 2) {
-                    printf("Capture");
                     capture_key = 1;                    
                     MXC_TFT_FillRect(&area_2, 0x9D20);
                     text_buffer.data = "Capture";
@@ -692,8 +714,7 @@ int add_person(Person *p)
         init_reshow = 1;
         }       
         
-        //Show captured face
-        
+        //Show captured face        
         // Ask user if he/she is ok with the image
         // If not, repeat the process
         key = 0;
@@ -731,7 +752,7 @@ int add_person(Person *p)
 
      for (int i = 0; i < 16; i++) {
 
-         //TODO: THINK THIS AND FACTOR:256 SHIFT EMB
+         //TODO: Update here for adjustable shift
         if (output_buffer[i] >= 128)
             output_buffer[i] = 256 - ((256 - output_buffer[i]) * CNN_3_OUTPUT_SHIFT);
         else
@@ -750,8 +771,7 @@ int add_person(Person *p)
 
 
     flash_to_cnn(p, (p->embeddings_count + p->db_embeddings_count + DEFAULT_EMBS_NUM)); // Load a single embedding into CNN_3
-    p->embeddings_count += 1; // TODO: Check this later for add person, add embedding logic
-    //p->db_embeddings_count += 1;
+    p->embeddings_count += 1;
 
     record_mode = 0;
     PR_DEBUG("To continue to capture press P2.6, to return to main menu press P2.7\n");
@@ -825,7 +845,6 @@ void flash_to_cnn(Person *p, uint32_t cnn_location)
     uint32_t emb_addr;
 
     //Reload the latest emb
-    //TODO: Rethink this logic
     int block_id = (cnn_location) / 9;
     int block_offset = (cnn_location) % 9;
     int write_offset = 8 - block_offset; // reverse order for each block;
@@ -847,7 +866,6 @@ void flash_to_cnn(Person *p, uint32_t cnn_location)
 
     for (int base_id = 0; base_id < EMBEDDING_SIZE; base_id++){
     
-        //emb = (emb_buffer[base_id/4] >> (8 * (base_id % 4))) & 0x000000FF;
         emb = (emb_buffer[base_id/4] << (8 * (3 - (base_id % 4)))) & 0xFF000000; // 0xYYZZWWXX -> 0xXX000000, 0xWW000000, 0xZZ000000, 0xYY000000
         PR_DEBUG("Emb value: 0x%x\n", emb);
         kernel_addr = (volatile uint32_t *)(baseaddr[base_id] + block_id * 4);
@@ -873,7 +891,6 @@ void flash_to_cnn(Person *p, uint32_t cnn_location)
         }
         else if (write_offset == 1){
             kernel_buffer[1] = ((kernel_buffer[1] & 0x00FFFFFF) | emb);
-            //PR_DEBUG("Kernel buffer 1: 0x%x\n", kernel_buffer[1]);
         }
         else if (write_offset == 2){
             kernel_buffer[1] = ((kernel_buffer[1] & 0xFF00FFFF) | (emb >> 8));
@@ -898,11 +915,7 @@ void flash_to_cnn(Person *p, uint32_t cnn_location)
         }
 
 
-        /*
-        else{
-            kernel_buffer[((write_offset - 1) / 4) + 1] = ((kernel_buffer[((write_offset - 1) / 4) + 1] & (0xFFFFFF00 << ((3 - ((write_offset -1) % 4)) * 8))) | (emb << ((3 - ((write_offset -1) % 4)) * 8)));
-        }*/
-        
+
         *((volatile uint8_t *) ((uint32_t) kernel_addr | 1)) = 0x01; // Set address
 
         if (write_offset != 0){    
@@ -925,7 +938,7 @@ void flash_to_cnn(Person *p, uint32_t cnn_location)
 
     }
 
-    for (int k = 0; k < 7; k++) //TODO: Optimize this, memcpy?
+    for (int k = 0; k < 7; k++)
             {
                  names[cnn_location][k] = p->name[k]; // Populate the names array for post processing
             }
@@ -970,10 +983,6 @@ void setup_irqs()
 
 int record()
 {   
-
-    // First capture a name from touchscreen
-    
-
     Person p;
     Person *pptr = &p;
     text_t text_buffer;
@@ -988,28 +997,20 @@ int record()
     */
     MXC_ICC_Disable(MXC_ICC0);
 
-    //read database from flash and check magic value
 
     int err = 0;
-    /*
-    err = MXC_FLC_PageErase(DB_ADDRESS);
-            if (err) {
-            printf("Failed with error code %i\n", DB_ADDRESS, err);
-            return err; }*/
+
 
     
     if (check_db())
     {  
 
-    PR_DEBUG("Magic Matched, Database found\n");
-    //if magic value matches, get the latest ID from flash
-
+    PR_DEBUG("Magic Matched, Database found\n"); //if magic value matches, get the latest ID from flash
     
     }
 
-    //if magic value does not match, initialize flash
-
-    else 
+    
+    else //if magic value does not match, initialize flash
         {
            err = init_db();
            if (err) {
@@ -1022,20 +1023,13 @@ int record()
            
         }
 
-    //if magic value matches, check if name already exists
-
-
-
-    //if name exists, ask user to enter a different name
     
-    //if name does not exist, proceed to capture face
     get_status(pptr);
     PR_DEBUG("Latest ID: %d\n", pptr->id);
     PR_DEBUG("Total embeddings: %d\n", pptr->db_embeddings_count);
 
     err = add_person(pptr);
-    //cnn_verify_weights();
-    if (err == -1) { //TODO: change this to a way to exit to main menu
+    if (err == -1) { // error code -1 means return to main menu
             err = update_status(pptr);
             if (err) {
             printf("Failed to update status", err);
@@ -1074,42 +1068,6 @@ int record()
     else if (err != 0) {
             printf("Failed to add person", err);
             return err; }  
-
-    //capture face
-
-    //extract embedding
-
-    //write embedding to flash
-
-     PR_DEBUG("This is record\n");
-
-
-    
-
-
-    //Update Status in flash
-    
-
-    //cnn_verify_weights();
-    //cnn_3_configure(); // Configure CNN_3 layers
-
-    //write name to flash
-
-    //write number of embeddings to flash
-
-    //write number of subjects to flash
-
-    //write length of embeddings to flash
-
-    //write length of names to flash
-
-    
-
-
-
-    
-
-
     
         return err;
     

@@ -46,7 +46,7 @@
 
 #define NUM_ARS     2
 #define NUM_SCALES  2
-#define NUM_CLASSES 3 // TODO: CHECK THIS
+#define NUM_CLASSES 3
 
 #define LOC_DIM 4 //(x, y, w, h) or (x1, y1, x2, y2)
 

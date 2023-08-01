@@ -143,7 +143,6 @@ static void run_cnn_1(int x_offset, int y_offset)
     camera_get_image(&raw, &imgLen, &w, &h);
     #ifdef TFT_ENABLE
     int tft_time = utils_get_time_ms();
-    //MXC_TFT_ShowImageCameraRGB565(X_START, Y_START, raw, w, h);
     MXC_TFT_SetRotation(ROTATE_270);
     __disable_irq(); 	// Disable IRQ to block communication with touch screen 
 	MXC_TFT_Stream(X_START, Y_START, w, h);
@@ -168,7 +167,6 @@ static void run_cnn_1(int x_offset, int y_offset)
 	// Disable FIFO control
     *((volatile uint32_t *) 0x50000000) = 0x00000000;
 	
-    //PR_INFO("CNN initialization time : %d", utils_get_time_ms() - pass_time);
 
     // Switch CNN clock to PLL (200 MHz) div 1
     MXC_GCR->pclkdiv = (MXC_GCR->pclkdiv & ~(MXC_F_GCR_PCLKDIV_CNNCLKDIV | MXC_F_GCR_PCLKDIV_CNNCLKSEL))
@@ -186,17 +184,17 @@ static void run_cnn_1(int x_offset, int y_offset)
     // Prepare input data
 	for (int i = y_offset; i < HEIGHT_DET + y_offset; i++) {
 
-        data = raw + ((IMAGE_H - (WIDTH_DET)) / 2) * IMAGE_W * BYTE_PER_PIXEL;
-        data += (((IMAGE_W - (HEIGHT_DET)) / 2) + i) * BYTE_PER_PIXEL;
+        data = raw;
+        data +=  i * BYTE_PER_PIXEL;
 		
 		for (int j = x_offset; j < WIDTH_DET + x_offset; j++) {
             uint8_t ur, ug, ub;
             int8_t r, g, b;
 
-            ub = (uint8_t)(data[j * BYTE_PER_PIXEL * IMAGE_W + 1] << 3);
-            ug = (uint8_t)((data[j * BYTE_PER_PIXEL * IMAGE_W] << 5) |
-                           ((data[j * BYTE_PER_PIXEL * IMAGE_W + 1] & 0xE0) >> 3));
-            ur = (uint8_t)(data[j * BYTE_PER_PIXEL * IMAGE_W] & 0xF8);
+            ub = (uint8_t)(data[j * BYTE_PER_PIXEL * HEIGHT_DET + 1] << 3);
+            ug = (uint8_t)((data[j * BYTE_PER_PIXEL * HEIGHT_DET] << 5) |
+                           ((data[j * BYTE_PER_PIXEL * HEIGHT_DET + 1] & 0xE0) >> 3));
+            ur = (uint8_t)(data[j * BYTE_PER_PIXEL * HEIGHT_DET] & 0xF8);
             
 			// convert to sign values
 			b = ub - 128;

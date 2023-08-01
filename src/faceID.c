@@ -62,11 +62,14 @@ extern uint32_t ticks_2;
 extern mxc_wut_cfg_t cfg;
 extern area_t area;
 extern volatile uint32_t db_flash_emb_count;
-extern volatile char names[1024][7]; // 1024 names of 6 bytes each, as we support 1024 people in the database
+extern volatile char names[1024][7]; // 1024 names of 7 bytes each, as we support 1024 people in the database
 /************************************ VARIABLES ******************************/
 extern volatile uint32_t cnn_time; // Stopwatch
 
+#ifndef USE_BOX_ONLY
 static void process_img(int x_offset, int y_offset);
+#endif
+
 static void run_cnn_2(int x_offset, int y_offset);
 #ifdef LP_MODE_ENABLE
 static void ARM_low_power(int lp_mode);
@@ -83,7 +86,7 @@ uint8_t box[4]; // x1, y1, x2, y2
 volatile int32_t output_buffer[16];
 
 #ifdef UNNORMALIZE_RECORD
-volatile int32_t norm_output_buffer[16]; // TODO:For unnormilized emb. experiment
+volatile int32_t norm_output_buffer[16]; // For unnormilized emb. record
 #endif
 
 static int32_t ml_3_data32[(CNN_3_NUM_OUTPUTS + 3) / 4];
@@ -95,7 +98,7 @@ uint8_t box_height;
 
 
 
-
+#ifndef USE_BOX_ONLY
 void calculate_box_offset(void)
 {
 int x_mid, y_mid, temp;
@@ -126,7 +129,7 @@ uint8_t x1, y1, x2, y2;
 	PR_INFO("x_mid:%d y_mid:%d\n", x_mid, y_mid);
 	
 	// Calculate difference between X coordinate of box middle point and captured image middle point
-	temp = x_mid - IMAGE_H/2;
+	temp = x_mid - WIDTH_DET/2;
 	// Limit box movement
 	if(temp > MAX_X_OFFSET)
 		box_x_offset = MAX_X_OFFSET;
@@ -136,7 +139,7 @@ uint8_t x1, y1, x2, y2;
 		box_x_offset = temp;
 
     // Calculate difference between Y coordinate of box middle point and captured image middle point
-    temp = y_mid - IMAGE_W/2;
+    temp = y_mid - HEIGHT_DET/2;
 	
 	// Limit box movement
 	if(temp > MAX_Y_OFFSET)
@@ -154,7 +157,7 @@ void get_box(void)
    	PR_INFO("x1:%d y1:%d x2:%d y2:%d\n", box[0], box[1], box[2], box[3]);
 	calculate_box_offset();
 }
-
+#endif
 
 int face_id(void)
 {
@@ -234,16 +237,7 @@ uint8_t* raw;
 
 #ifdef TFT_ENABLE
     pass_time = utils_get_time_ms();
-    /*
-    MXC_TFT_ShowImageCameraRGB565(X_START, Y_START, raw, w, h);
-	x1 = X_START + MAX_X_OFFSET + x_offset;
-	y1 = Y_START + MAX_Y_OFFSET + y_offset;
-	x2 = x1 + WIDTH_ID;
-	y2 = y1 + HEIGHT_ID; */
-	// Draw rectangle around face
-    
-   
-    
+     
     int ret;
     int lum;
     text_t printResult;
@@ -260,7 +254,7 @@ uint8_t* raw;
             //PR_WARN("Low Light!");
             printResult.data = " LOW LIGHT ";
             printResult.len  = strlen(printResult.data);
-            area_t area      = {100, 290, 200, 30};
+            //area_t area      = {100, 290, 200, 30};
             MXC_TFT_ClearArea(&area, 4);
             MXC_TFT_PrintFont(CAPTURE_X, CAPTURE_Y, font, &printResult, NULL);
         }
@@ -281,14 +275,11 @@ static void run_cnn_2(int x_offset, int y_offset)
     float x_prime;
     uint8_t x_loc;
     uint8_t y_loc;
-    uint8_t x1 =  MAX(box[1], 0); 
-    uint8_t y1 =  MAX(box[0], 0); 
+    uint8_t x1 =  MAX(box[1], 0); //rotated box
+    uint8_t y1 =  MAX(box[0], 0); //rotated box
     float sum = 0;
     float b;
-    //char dummy_db[8][20] = {"AshtonKutcher", "BradPitt", "CharlizeTheron", "ChrisHemsworth", "Erman", "MilaKunis", "Oguzhan", "ScarlettJohansson"};
-
-    //uint8_t send_package[3];
-    //uint8_t* snd_ptr = send_package;
+    
 
     uint8_t box_width = box[2] - box[0];
     uint8_t box_height = box[3] - box[1];
@@ -315,30 +306,22 @@ static void run_cnn_2(int x_offset, int y_offset)
     MXC_GCR->pclkdiv = (MXC_GCR->pclkdiv & ~(MXC_F_GCR_PCLKDIV_CNNCLKDIV | MXC_F_GCR_PCLKDIV_CNNCLKSEL))
                      | MXC_S_GCR_PCLKDIV_CNNCLKDIV_DIV1 | MXC_S_GCR_PCLKDIV_CNNCLKSEL_IPLL;
 
-    //pass_time = utils_get_time_ms();
     
 	// Start CNN_2
 	cnn_2_start();
 
-    //PR_INFO("CNN initialization time : %d", utils_get_time_ms() - pass_time);
 
     uint8_t* data = raw;
 
-    //pass_time = utils_get_time_ms();
 
-    //LED_On(1); // red LED
     
 	// Load data to CNN_2 FIFO
     #ifdef USE_BOX_ONLY
-    //utils_send_bytes(MXC_UART0, (uint8_t*)"*STR*", 5);
     PR_INFO("x1: %d, y1: %d", x1, y1);
     for (int i = 0; i <  HEIGHT_ID ; i++) {
-        //data = raw + ((IMAGE_H - (WIDTH_ID)) / 2) * IMAGE_W * BYTE_PER_PIXEL;
-        //data += (((IMAGE_W - (HEIGHT_ID)) / 2) + i) * BYTE_PER_PIXEL;
         y_prime = ((float)(i) / HEIGHT_ID) * box_height;
-        y_loc =  (uint8_t) (MIN(round(y_prime), box_height-1)); // + y1;        
-        data = raw + y1 * IMAGE_W * BYTE_PER_PIXEL + y_loc  * BYTE_PER_PIXEL;
-        //data -= x1 * BYTE_PER_PIXEL;
+        y_loc =  (uint8_t) (MIN(round(y_prime), box_height-1));        
+        data = raw + y1 * HEIGHT_DET * BYTE_PER_PIXEL + y_loc  * BYTE_PER_PIXEL;
         data += x1 * BYTE_PER_PIXEL;
         for (int j = 0; j < WIDTH_ID ; j++) {
             uint8_t ur, ug, ub;
@@ -347,17 +330,10 @@ static void run_cnn_2(int x_offset, int y_offset)
             x_prime = ((float)(j) / WIDTH_ID) * box_width;
             x_loc = (uint8_t) (MIN(round(x_prime), box_width-1));
             
-            ub = (uint8_t)(data[x_loc * BYTE_PER_PIXEL * IMAGE_W + 1] << 3);
-            ug = (uint8_t)((data[x_loc * BYTE_PER_PIXEL * IMAGE_W] << 5) |
-                           ((data[x_loc * BYTE_PER_PIXEL * IMAGE_W + 1] & 0xE0) >> 3));
-            ur = (uint8_t)(data[x_loc * BYTE_PER_PIXEL * IMAGE_W] & 0xF8);
-
-            //send_package[0] = y_loc;
-            //send_package[1] = x_loc;
-            //send_package[2] = 0;
-
-            //PR_DEBUG("%d, %d, %d,", ur, ug, ub);
-            //utils_send_bytes(MXC_UART0, snd_ptr, 3);
+            ub = (uint8_t)(data[x_loc * BYTE_PER_PIXEL * HEIGHT_DET + 1] << 3);
+            ug = (uint8_t)((data[x_loc * BYTE_PER_PIXEL * HEIGHT_DET] << 5) |
+                           ((data[x_loc * BYTE_PER_PIXEL * HEIGHT_DET + 1] & 0xE0) >> 3));
+            ur = (uint8_t)(data[x_loc * BYTE_PER_PIXEL * HEIGHT_DET] & 0xF8);
 
             b = ub - 128;
             g = ug - 128;
@@ -373,18 +349,18 @@ static void run_cnn_2(int x_offset, int y_offset)
     }
     #else
 	for (int i = y_offset; i <  HEIGHT_ID + y_offset; i++) {
-        data = raw + ((IMAGE_H - (WIDTH_ID)) / 2) * IMAGE_W * BYTE_PER_PIXEL;
-        data += (((IMAGE_W - (HEIGHT_ID)) / 2) + i) * BYTE_PER_PIXEL;
+        data = raw + ((WIDTH_DET - (WIDTH_ID)) / 2) * HEIGHT_DET * BYTE_PER_PIXEL;
+        data += (((HEIGHT_DET - (HEIGHT_ID)) / 2) + i) * BYTE_PER_PIXEL;
 
         for (int j = x_offset; j < WIDTH_ID + x_offset; j++) {
             uint8_t ur, ug, ub;
             int8_t r, g, b;
             uint32_t number;
 
-            ub = (uint8_t)(data[j * BYTE_PER_PIXEL * IMAGE_W + 1] << 3);
-            ug = (uint8_t)((data[j * BYTE_PER_PIXEL * IMAGE_W] << 5) |
-                           ((data[j * BYTE_PER_PIXEL * IMAGE_W + 1] & 0xE0) >> 3));
-            ur = (uint8_t)(data[j * BYTE_PER_PIXEL * IMAGE_W] & 0xF8);
+            ub = (uint8_t)(data[j * BYTE_PER_PIXEL * HEIGHT_DET + 1] << 3);
+            ug = (uint8_t)((data[j * BYTE_PER_PIXEL * HEIGHT_DET] << 5) |
+                           ((data[j * BYTE_PER_PIXEL * HEIGHT_DET + 1] & 0xE0) >> 3));
+            ur = (uint8_t)(data[j * BYTE_PER_PIXEL * HEIGHT_DET] & 0xF8);
 
             b = ub - 128;
             g = ug - 128;
@@ -402,7 +378,6 @@ static void run_cnn_2(int x_offset, int y_offset)
 
 
 
-    //pass_time = utils_get_time_ms();
 
 	while (cnn_time == 0)
 		MXC_LP_EnterSleepMode(); // Wait for CNN
@@ -414,7 +389,6 @@ static void run_cnn_2(int x_offset, int y_offset)
 
     cnn_2_unload((uint32_t *)output_buffer);
 
-    //pass_time = utils_get_time_ms();
 
     uint32_t value;
     int8_t pr_value;
@@ -605,8 +579,7 @@ static void run_cnn_2(int x_offset, int y_offset)
     PR_DEBUG("CNN_3 max value index: %d \n", max_emb_index);
     if (max_emb > Threshold)
     {
-        //PR_DEBUG("subject id: %d \n", max_emb_index/6);
-        name =  names[max_emb_index];
+        name =  (char*)names[max_emb_index];
         PR_DEBUG("subject name: %s \n", name);
     }
     else
