@@ -222,6 +222,7 @@ int face_id(void)
     return 0;
 }
 
+#ifndef USE_BOX_ONLY
 static void process_img(int x_offset, int y_offset)
 {
 #ifdef TFT_ENABLE
@@ -263,6 +264,7 @@ uint8_t* raw;
     PR_INFO("Screen print time : %d", utils_get_time_ms() - pass_time);
 #endif //#ifdef TFT_ENABLE
 }
+#endif // #ifndef USE_BOX_ONLY
 
 static void run_cnn_2(int x_offset, int y_offset)
 {
