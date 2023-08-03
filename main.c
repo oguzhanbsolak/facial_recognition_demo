@@ -211,11 +211,14 @@ unsigned int touch_x, touch_y;
 int font = (int)&SansSerif16x16[0];
 
 void init_names(){
-	char default_names[DEFAULT_EMBS_NUM][7] = DEFAULT_NAMES; 
+	char default_names[DEFAULT_EMBS_NUM][7] = DEFAULT_NAMES;
+	#pragma GCC diagnostic push
+	#pragma GCC diagnostic ignored "-Wstringop-truncation" 
 	for (int i = 0; i < DEFAULT_EMBS_NUM; i++){
 		strncpy((char*)names[i], default_names[i], 7);
 		
 	}
+	#pragma GCC diagnostic pop
 }
 
 void gpio_isr(void *cbdata)
