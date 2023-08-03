@@ -51,14 +51,10 @@ class Simulator:
 
     def __init__(self, checkpoint_path):
         self.device = self.__get_device()
-        #load model
         set_device(87, True, True)
         self.model = ai87netmobilefacenet_112.ai87netmobilefacenet_112(bias = True).to(self.device)
         ai8x.fuse_bn_layers(self.model)
-        #checkpoint = torch.load(checkpoint_path, map_location=self.device)
         self.model = apputils.load_lean_checkpoint(self.model, checkpoint_path, model_device=self.device)
-
-        #self.model.load_state_dict(checkpoint['state_dict'])
         ai8x.update_model(self.model)
         self.model = self.model.to(self.device)
         self.model.eval()

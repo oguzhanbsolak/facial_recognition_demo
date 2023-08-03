@@ -36,103 +36,14 @@ Utility functions to generate embeddings and I/O operations
 """
 
 import os
-import csv
-import copy
 from collections import defaultdict
 import numpy as np
-import scipy
-import scipy.ndimage
 
-import matplotlib
 
 from matplotlib.image import imread
-import matplotlib.pyplot as plt
 from PIL import Image, ExifTags
 import torch
-import torchvision
 import torchvision.transforms.functional as VF
-
-def load_db(db_path, subj_name_file_path=None):
-    """Loads embeddings from binary file to a dictionary
-    """
-    subj_ids, subj_list, embedding_list = load_embedding_list(db_path)
-
-    if subj_name_file_path:
-        subj_name_map = load_subject_map(subj_name_file_path)
-    else:
-        subj_name_map = {}
-        for i in subj_ids:
-            subj_name_map[i] = ('%d' % i)
-
-    embedding_db = {}
-    for i in range(subj_list.size):
-        subj = subj_name_map[subj_list[i]]
-        if subj not in embedding_db:
-            embedding_db[subj] = {}
-            emb_no = 1
-        else:
-            emb_no = len(embedding_db[subj]) + 1
-        embedding_db[subj]['Embedding_%d' % emb_no] = {'emb': embedding_list[i, :], 'img': None}
-
-    return embedding_db
-
-
-def load_subject_map(path):
-    """Loads subject names to a dictionary
-    """
-    subj_name_map = {}
-    with open(path) as file:
-        data = csv.reader(file, delimiter=',')
-        for row in data:
-            subj_name_map[int(row[0])] = row[1]
-
-    return subj_name_map
-
-
-def load_embedding_list(db_path):
-    """Loads embeddings from binary file to lists
-    """
-    ##########################################
-    # The data in order:
-    #    1 byte : number of subjects   (S)
-    #    2 bytes: length of embeddings (L)
-    #    2 bytes: number of embeddings (N)
-    #    (L+1)*N bytes: embeddings
-    #        1 byte : subject id
-    #        L bytes: embedding
-    ##########################################
-
-    subj_list = []
-    embedding_list = []
-
-    with open(db_path, "rb") as file:
-        _ = int.from_bytes(file.read(1), byteorder='big', signed=False) # pylint: disable=invalid-name
-        L = int.from_bytes(file.read(2), byteorder='big', signed=False) # pylint: disable=invalid-name
-        N = int.from_bytes(file.read(2), byteorder='big', signed=False) # pylint: disable=invalid-name
-
-        for _ in range(N):
-            subj_list.append(int.from_bytes(file.read(1), byteorder='big', signed=False))
-            embedding_list.append(list(file.read(L)))
-
-    subj_list = np.array(subj_list)
-    subj_ids = np.unique(subj_list)
-
-    embedding_list = np.array(embedding_list)
-    neg_idx = embedding_list > 127
-    embedding_list[neg_idx] -= 256
-
-    return subj_ids, subj_list, embedding_list
-
-
-def equalize_hist(img, percentile=95):
-    """Histogram equalization for a given image
-    """
-    dc = img.ravel().mean() # pylint: disable=invalid-name
-    ac = img - dc # pylint: disable=invalid-name
-    max_val = np.percentile(np.abs(ac.ravel()), percentile)
-    mult = 127 / max_val
-    new_img = np.clip(np.round(mult * ac + dc), 0, 255)
-    return new_img.astype(np.uint8)
 
 
 def get_image_rotation(img_path):
@@ -171,22 +82,23 @@ def rotate_image(img, img_rot):
     return img
 
 
-# pylint: disable=too-many-statements
-def append_db_file_from_path(folder_path, face_detector, ai85_adapter, db_dict=None, verbose=True,
-                             preview_images=False):
+def append_db_file_from_path(folder_path, face_detector, ai85_adapter):
     """Creates embeddings for each image in the given folder and appends to the existing embedding
     dictionary
     """
-    existing_db_dict = db_dict
-    db_dict = defaultdict(dict)
-    img_list = []
     subj_id = 0
     subject_list = sorted(os.listdir(folder_path))
-    emb_array = np.zeros([1024, 64])
-    emb_id = 0    
+    emb_array = np.zeros([1024, 64]).astype(np.uint8)
+    recorded_subject = []
+    emb_id = 0
+    output_shift = 2 #TODO: Check here for adj. output shift
+    summary = {}
+
+    for i in subject_list:
+        summary[i] = 0
     for subject in subject_list:
         print(f'Processing subject: {subject}')
-        img_id = 0
+        
         subject_path = os.path.join(folder_path, subject)
         if not os.path.isdir(subject_path):
             continue
@@ -198,79 +110,37 @@ def append_db_file_from_path(folder_path, face_detector, ai85_adapter, db_dict=N
             img_rot = get_image_rotation(img_path)
             img = imread(img_path)
             img = rotate_image(img, img_rot)
-            img = img.astype(np.float32)
-            
-            #if img.dtype == np.float32:
-            #    img = (255 * img).astype(np.uint8)
+            img = img.astype(np.float32)            
+
             img = get_face_image(img, face_detector)
             if img is not None:
                 img = ((img+1)*128)
                 img = (img.squeeze()).detach().cpu().numpy()
                 img = img.astype(np.uint8)
                 img = img.transpose([1, 2, 0])
-                #print(img.min(), img.max())
-                plt.imsave(subject+'test.png', img)
+
                 if img.shape == (112, 112, 3):
-                    img_id += 1
-                    #img = equalize_hist(img, 99)                    
-                    current_embedding = ai85_adapter.get_network_out(img)[:, :, 0, 0]
-                    emb_array[emb_id,:] = current_embedding.flatten()
+
+                    current_embedding = ai85_adapter.get_network_out(img)[:, :, 0, 0]                    
+                    current_embedding = current_embedding * 128 * output_shift #convert back to 8 bits after normalization                    
+                    current_embedding[current_embedding < 0] += 256                    
+                    current_embedding = np.around(current_embedding).astype(np.uint8).flatten()
+
+                    emb_array[emb_id,:] = current_embedding
+                    recorded_subject.append(subject)
                     emb_id += 1
-                    current_embedding = current_embedding.astype(np.int8).flatten()                     
-                    img_list.append(img)
-                    db_dict[subject]['Embedding_%d' % img_id] = {'emb': current_embedding,
-                                                                 'img': img}
-    np.save('emb_array.npy', emb_array)
+                    summary[subject] += 1
+                                      
+    #np.save('emb_array.npy', emb_array)
+    print('Database Summary')
+    for key in summary:
+        print(f'\t{key}:', f'{summary[key]} images')
+    #Format summary for printing image counts per subject
+    
+        
 
-    # Summary and determination of max photo per user
-    max_photo = 0
-    if verbose:
-        if existing_db_dict:
-            print('New entries for the DB')
-        else:
-            print('A new DB with')
-    for idx, subj in enumerate(db_dict.keys()):
-        if verbose:
-            print(f'\t{subj}: {len(db_dict[subj].keys())} images')
-        if len(list(db_dict[subj].keys())) > max_photo:
-            max_photo = len(list(db_dict[subj].keys()))
-    if verbose:
-        if existing_db_dict:
-            print('have been appended!')
-        else:
-            print('has been created!')
+    return emb_array, recorded_subject
 
-    # Preview image formation
-    preview = None
-    if preview_images:
-        preview = 125*np.ones((len(db_dict.keys()) * 112, max_photo * 112, 3))
-        for idx, subj in enumerate(db_dict.keys()):
-            start_y = 0 + idx * 112
-            start_x = 0
-            for img_ind in db_dict[subj].keys():
-                preview[start_y:start_y+112, start_x:start_x+112, :] = db_dict[subj][img_ind]['img']
-                start_x += 112
-        preview = preview.astype(np.uint8)
-        if verbose:
-            plt.figure(figsize=(1.5*max_photo, 2*len(db_dict.keys())))
-            plt.imshow(preview)
-            plt.show()
-
-    # Merge the new db and existing one if append mode is called
-    if existing_db_dict:
-        integrated_db = copy.deepcopy(existing_db_dict)
-        for subj in db_dict.keys():
-            # if same subject exists in both dictionaries
-            if subj in existing_db_dict.keys():
-                img_id = max(list(existing_db_dict[subj].keys())) + 1
-                for ind in db_dict[subj].keys():
-                    integrated_db[subj]['Embedding_%d' % img_id] = integrated_db[subj][ind]
-                    img_id += 1
-            else:
-                integrated_db[subj] = integrated_db[subj]
-        db_dict = integrated_db
-
-    return db_dict, preview
 def coord_calc(box):
     box[0] = torch.clamp(box[0], min=0) * 168
     box[2] = torch.clamp(box[2], min=0) * 168
@@ -301,219 +171,96 @@ def get_face_image(img, face_detector, min_prob=0.25):
         if all_images_labels[0][0] == 1:
             pbox = all_images_boxes[0][0]
             top, left, height, width = coord_calc(pbox)
-            print("A")
             img = VF.resized_crop(img= img, top=top, left=left, height=height, width=width, size=[112,112])
             return img
 
     return None
 
 
-def create_data_arrs(emb_db, add_prev_imgs):
-    """Converts embedding dict to lists
+def create_weights_include_file(emb_array):
     """
-    subject_names = list(emb_db.keys())
-
-    subject_arr = []
-    embedding_arr = []
-    img_arr = []
-
-    for i, subj in enumerate(emb_db.keys()):
-        for emb_key in emb_db[subj].keys():
-            subject_arr.append(i)
-            embedding_arr.append(emb_db[subj][emb_key]['emb'])
-            if add_prev_imgs:
-                if emb_db[subj][emb_key]['img'] is not None:
-                    img_arr.append(emb_db[subj][emb_key]['img'].flatten())
-                else:
-                    img_arr.append(np.zeros((112 * 112 * 3,), np.uint8))
-
-    return subject_names, np.array(subject_arr), np.array(embedding_arr), np.array(img_arr)
-
-
-def save_embedding_db(emb_db, db_path, add_prev_imgs=False):
+    Create weights_3.h file from embeddings
     """
-    Saves embedding database in binary format
+    Embedding_dimension = 64
+    weights_h_path = 'include\weights_3.h'
 
-    The data in order:
-        1 byte : number of subjects (S)
-        2 bytes: length of embeddings (L)
-        2 bytes: number of embeddings (N)
-        2 bytes: length of image width (W)
-        2 bytes: length of image height (H)
-        2 bytes: length of subject names (K)
-        K bytes: subject names
-        (L+1)*N bytes: embeddings
-            1 byte : subject id
-            L bytes: embedding
-        (W*H*3)*N bytes: image
-    """
-
-    subject_names, subject_arr, embedding_arr, img_arr = create_data_arrs(emb_db, add_prev_imgs)
-
-    subject_arr = subject_arr.astype(np.uint8)
-    embedding_arr = embedding_arr.astype(np.int8)
-
-    names_str = '  '.join(subject_names)
-    names_bytes = bytearray()
-    names_bytes.extend(map(ord, names_str))
-
-    S = np.unique(subject_arr).size # pylint: disable=invalid-name
-    K = len(names_bytes) # pylint: disable=invalid-name
-    N, L = embedding_arr.shape # pylint: disable=invalid-name
-    W = 112 # pylint: disable=invalid-name
-    H = 112 # pylint: disable=invalid-name
-
-    db_data = bytearray(np.uint8([S]))
-    db_data.extend(L.to_bytes(2, 'big', signed=False))
-    db_data.extend(N.to_bytes(2, 'big', signed=False))
-    db_data.extend(W.to_bytes(2, 'big', signed=False))
-    db_data.extend(H.to_bytes(2, 'big', signed=False))
-
-    db_data.extend(K.to_bytes(2, 'big', signed=False))
-    db_data.extend(names_bytes)
-
-    for i, emb in enumerate(embedding_arr):
-        db_data.extend(bytearray([subject_arr[i]]))
-        db_data.extend(bytearray(emb))
-
-    if add_prev_imgs:
-        for img in img_arr:
-            db_data.extend(bytearray(img))
-
-    with open(db_path, 'wb') as file:
-        file.write(db_data)
-
-    print(f'Binary embedding file is saved to "{db_path}".')
-
-
-def load_data_arrs(db_path, load_img_prevs=True):
-    """Loads embeddings from binary file to lists
-    """
-
-    with open(db_path, "rb") as file:
-        _ = int.from_bytes(file.read(1), byteorder='big', signed=False) # pylint: disable=invalid-name
-        L = int.from_bytes(file.read(2), byteorder='big', signed=False) # pylint: disable=invalid-name
-        N = int.from_bytes(file.read(2), byteorder='big', signed=False) # pylint: disable=invalid-name
-        W = int.from_bytes(file.read(2), byteorder='big', signed=False) # pylint: disable=invalid-name
-        H = int.from_bytes(file.read(2), byteorder='big', signed=False) # pylint: disable=invalid-name
-        K = int.from_bytes(file.read(2), byteorder='big', signed=False) # pylint: disable=invalid-name
-
-        subject_names_str = file.read(K).decode('ascii')
-        subject_names_list = subject_names_str.split('  ')
-
-        subj_list = []
-        embedding_list = []
-
-        for _ in range(N):
-            subj_list.append(int.from_bytes(file.read(1), byteorder='big', signed=False))
-            embedding_list.append(list(file.read(L)))
-
-        embedding_list = np.array(embedding_list).astype(np.int8)
-        neg_idx = embedding_list > 127
-        embedding_list[neg_idx] -= 256
-
-        img_arr = None
-        if load_img_prevs:
-            img_bin = file.read(N * W * H * 3)
-            if img_bin:
-                img_arr = np.array(list(img_bin)).astype(np.uint8)
-                img_arr = img_arr.reshape(N, H, W, 3)
-
-    return subject_names_list, subj_list, embedding_list, img_arr
-
-
-def load_embedding_db(db_path):
-    """
-    Loads embeddings from binary file to dictionary
-
-    The data in order:
-        1 byte : number of subjects (S)
-        2 bytes: length of embeddings (L)
-        2 bytes: number of embeddings (N)
-        2 bytes: length of image width (W)
-        2 bytes: length of image height (H)
-        2 bytes: length of subject names (K)
-        K bytes: subject names
-        (L+1)*N bytes: embeddings
-            1 byte : subject id
-            L bytes: embedding
-        (W*H*3)*N bytes: image
-    """
-
-    subject_names_list, subj_list, embedding_list, img_arr = load_data_arrs(db_path)
-
-    emb_db = {}
-    for subj in subject_names_list:
-        emb_db[subj] = {}
-
-    for i, _ in enumerate(subj_list):
-        subj_name = subject_names_list[subj_list[i]]
-        emb = embedding_list[i]
-        if img_arr is None:
-            img = None
-        else:
-            img = img_arr[i, :, :, :]
-        emb_name = 'Embedding_%d' % (len(emb_db[subj_name]) + 1)
-
-        emb_db[subj_name][emb_name] = {'emb': emb, 'img': img}
-
-    return emb_db
-
-
-def create_embeddings_include_file(db_folder, db_filename, include_folder):
-    """Converts binary embedding to a .h file to compile as a C code.
-    """
-    db_path = os.path.join(db_folder, db_filename + '.bin')
-    data_bin = bytearray()
-
-    with open(db_path, "rb") as file:
-        S = int.from_bytes(file.read(1), byteorder='big', signed=False) # pylint: disable=invalid-name
-        L = int.from_bytes(file.read(2), byteorder='big', signed=False) # pylint: disable=invalid-name
-        N = int.from_bytes(file.read(2), byteorder='big', signed=False) # pylint: disable=invalid-name
-        W = int.from_bytes(file.read(2), byteorder='big', signed=False) # pylint: disable=invalid-name
-        H = int.from_bytes(file.read(2), byteorder='big', signed=False) # pylint: disable=invalid-name
-        K = int.from_bytes(file.read(2), byteorder='big', signed=False) # pylint: disable=invalid-name
-
-        subject_names_str = file.read(K).decode('ascii')
-        subject_names_list = subject_names_str.split('  ')
-        subject_names_str = '\0'.join(subject_names_list) + '\0'
-
-        names_bytes = bytearray()
-        names_bytes.extend(map(ord, subject_names_str))
-
-        K = len(subject_names_str) # pylint: disable=invalid-name
-
-        data_bin.extend(S.to_bytes(1, 'little', signed=False))
-        data_bin.extend(L.to_bytes(2, 'little', signed=False))
-        data_bin.extend(N.to_bytes(2, 'little', signed=False))
-        data_bin.extend(W.to_bytes(2, 'little', signed=False))
-        data_bin.extend(H.to_bytes(2, 'little', signed=False))
-        data_bin.extend(K.to_bytes(2, 'little', signed=False))
-
-        data_bin.extend(names_bytes)
-
-        for _ in range((L+1)*N):
-            next_d = file.read(1)
-            data_bin.extend(next_d)
-
+    baseaddrs= ["0x51401f40", "0x51421f40", "0x51441f40", "0x51461f40", "0x51481f40", "0x514a1f40", "0x514c1f40", "0x514e1f40",
+        "0x51501f40", "0x51521f40", "0x51541f40", "0x51561f40", "0x51581f40", "0x515a1f40", "0x515c1f40", "0x515e1f40",
+        "0x52401f40", "0x52421f40", "0x52441f40", "0x52461f40", "0x52481f40", "0x524a1f40", "0x524c1f40", "0x524e1f40",
+        "0x52501f40", "0x52521f40", "0x52541f40", "0x52561f40", "0x52581f40", "0x525a1f40", "0x525c1f40", "0x525e1f40",
+        "0x53401f40", "0x53421f40", "0x53441f40", "0x53461f40", "0x53481f40", "0x534a1f40", "0x534c1f40", "0x534e1f40",
+        "0x53501f40", "0x53521f40", "0x53541f40", "0x53561f40", "0x53581f40", "0x535a1f40", "0x535c1f40", "0x535e1f40",
+        "0x54401f40", "0x54421f40", "0x54441f40", "0x54461f40", "0x54481f40", "0x544a1f40", "0x544c1f40", "0x544e1f40",
+        "0x54501f40", "0x54521f40", "0x54541f40", "0x54561f40", "0x54581f40", "0x545a1f40", "0x545c1f40", "0x545e1f40"]
+    length = "0x00000101"
     data_arr = []
     data_line = []
-    for next_d in data_bin:
-        data_line.append(f'0x{next_d:02x}')
-        if (len(data_line) % 18) == 0:
-            data_arr.append(','.join(data_line))
-            data_line.clear()
+    four_byte = []
+    
+    
+    with open(weights_h_path, 'w') as h_file:
+        h_file.write('#define KERNELS_3 { \\\n  ')
+        for dim in range(Embedding_dimension):
+            init_proccessor = False
+            for i in range(emb_array.shape[0] + 4): # nearest %9 == 0 for 1024 is 1027, it can be kept in 1028 bytes TODO: Change this from Hardcoded
+                reindex = i + 8 - 2*(i%9)
+                if reindex < 1024: # Total emb count is 1024, last index 1023
+                    single_byte = str(format(emb_array[reindex][dim], 'x')) #Relocate emb for cnn kernel
+                else:
+                    single_byte = str(format(0, 'x'))
+                if len(single_byte) == 1:
+                    single_byte = '0' + single_byte
+                four_byte.append(single_byte)
 
-    data_arr.append(','.join(data_line))
-    data = ', \\\n  '.join(data_arr)
+                if (i + 1) % 4 == 0:
+                    if not init_proccessor:
+                        data_line.append(baseaddrs[dim])
+                        if (len(data_line) % 8) == 0:
+                            data_arr.append(', '.join(data_line))
+                            data_line.clear()
+                        data_line.append(length)
+                        if (len(data_line) % 8) == 0:
+                            data_arr.append(', '.join(data_line))
+                            data_line.clear()
+                        init_proccessor = True
+                    data_32 = '0x'+''.join(four_byte)
 
-    db_h_path = os.path.join(include_folder, db_filename + '.h')
-    with open(db_h_path, 'w') as h_file:
-        h_file.write('#define EMBEDDINGS { \\\n  ')
+                    data_line.append(data_32)
+                    four_byte.clear()
+                    if (len(data_line) % 8) == 0:
+                        data_arr.append(', '.join(data_line))
+                        data_line.clear()
+        
+        data_arr.append(', '.join(data_line))
+        data = ', \\\n  '.join(data_arr)
+        h_file.write(data)
+        h_file.write('0x00000000') #TODO: CHECK THE SOURCE OF THE LAST 0x00000000, PS: Might be due to addr matching while loading weights at c side
+        h_file.write(' \\\n}')
+        h_file.write('\n')
+
+def create_embeddings_include_file(recorded_subjects):
+    data_arr = []
+    data_line = []
+
+    embeddings_h_path = 'include\embeddings.h'
+    with open(embeddings_h_path, 'w') as h_file:        
+        h_file.write('#define DEFAULT_EMBS_NUM ' + str(len(recorded_subjects)) + ' \n')
+        h_file.write('\n')
+        h_file.write('#define DEFAULT_NAMES { \\\n ')
+
+        for subject in recorded_subjects:
+            if len(subject) > 6: #TODO: 6 is the max name length for now
+                subject = subject[:6]
+            data_line.append('"' + subject + '"')
+            if (len(data_line) % 15) == 0:
+                data_arr.append(', '.join(data_line))
+                data_line.clear()
+
+        data_arr.append(', '.join(data_line))
+        data = ', \\\n '.join(data_arr)
         h_file.write(data)
         h_file.write(' \\\n}')
-
-    print(f'Embedding file is saved to {db_h_path}')
+        h_file.write('\n')
 
 def Normalize_Img(img):
     return img.sub(128).clamp(min=-128, max=127).div(128.)

@@ -57,6 +57,7 @@
 #include "weights_3.h"
 #include "baseaddr.h"
 #include "record.h"
+#include "embeddings.h"
 
 
 #define S_MODULE_NAME "record"
@@ -114,10 +115,7 @@ typedef struct person Person;
 volatile uint32_t isr_cnt;
 volatile uint32_t isr_flags;
 volatile uint32_t db_flash_emb_count;
-volatile char names[1024][7] = {"AshK", "AshK", "AshK", "AshK", "AshK", "AshK", "BradP", "BradP", "BradP", "BradP", "BradP",
- "BradP","CharT", "CharT", "CharT", "CharT", "CharT", "CharT", "ChrsH", "ChrsH", "ChrsH", "ChrsH", "ChrsH", "ChrsH", "Erman",
-"Erman", "Erman", "Erman", "Erman", "Erman", "MilaK", "MilaK", "MilaK", "MilaK", "MilaK", "MilaK", "OguzB", "OguzB", "OguzB", 
-"OguzB", "OguzB", "OguzB", "ScarJ", "ScarJ" , "ScarJ", "ScarJ", "ScarJ", "ScarJ"}; // 1024 names of 7 bytes each, as we support 1024 people in the database
+extern volatile char names[1024][7]; // 1024 names of 7 bytes each, as we support 1024 people in the database
 extern volatile int32_t output_buffer[16];
 extern unsigned int touch_x, touch_y;
 extern volatile uint8_t face_detected;
@@ -159,8 +157,8 @@ void get_name(Person *p)
     int len = 0;
     text_t text_buffer;
     area_t area_buffer;
-    for (int i = 0; i < 7; i++)
-        {p->name[i] = '\0';}
+
+    strncpy(p->name, "\0\0\0\0\0\0" , 7);
 
 	while (1){
         key = MXC_TS_GetKey();
@@ -937,11 +935,7 @@ void flash_to_cnn(Person *p, uint32_t cnn_location)
         }
 
     }
-
-    for (int k = 0; k < 7; k++)
-            {
-                 names[cnn_location][k] = p->name[k]; // Populate the names array for post processing
-            }
+    strncpy((char*)names[cnn_location],  p->name, 7);
 
 }
 

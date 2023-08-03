@@ -35,11 +35,13 @@
 Script to generate Face Id embeddings
 """
 import argparse
+import numpy as np
+import os
 import os.path as path
 from ai85.ai85_adapter import AI85SimulatorAdapter
 from ai85.ai85_facedet_adapter import Facedet_AI85SimulatorAdapter
 
-from utils import append_db_file_from_path, save_embedding_db, create_embeddings_include_file
+from utils import append_db_file_from_path, create_weights_include_file, create_embeddings_include_file
 
 CURRENT_DIR = path.abspath(path.dirname(path.abspath(__file__)))
 MODEL_PATH = path.join(CURRENT_DIR, 'model', 'mobilefacenet_112_qat_best-q.pth.tar')
@@ -55,17 +57,17 @@ def create_db_from_folder(args):
 
     ai85_adapter = AI85SimulatorAdapter(MODEL_PATH)
     face_detector = Facedet_AI85SimulatorAdapter(FACEDET_PATH)
+    
+    os.makedirs(args.db, exist_ok=True)
 
-    embedding_db, _ = append_db_file_from_path(args.db, face_detector, ai85_adapter,
-                                               db_dict=None, verbose=True)
-    if not embedding_db:
+    emb_array, recorded_subject = append_db_file_from_path(args.db, face_detector, ai85_adapter)    
+    if not np.any(emb_array):
         print(f'Cannot create a DB file. No face could be detected from the images in folder ',
               f'`{args.db}`')
         return
-
-    save_embedding_db(embedding_db, path.join(CURRENT_DIR, args.db_filename + '.bin'),
-                      add_prev_imgs=True)
-    create_embeddings_include_file(CURRENT_DIR, args.db_filename, args.include_path)
+    create_weights_include_file(emb_array)
+    create_embeddings_include_file(recorded_subject)
+    print(f'Created weights_3.h and embeddings.h files from {len(recorded_subject)} images.')
 
 
 def parse_arguments():
@@ -75,10 +77,6 @@ def parse_arguments():
     parser = argparse.ArgumentParser(description='Create embedding database file.')
     parser.add_argument('--db', '-db-path', type=str, default='db',
                         help='path for face images')
-    parser.add_argument('--db-filename', type=str, default='embeddings',
-                        help='filename to store embeddings')
-    parser.add_argument('--include-path', type=str, default='embeddings',
-                        help='path to include folder')
 
     args = parser.parse_args()
     return args

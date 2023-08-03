@@ -21,8 +21,6 @@ from torch import nn
 
 import ai85.ai8x as ai8x
 import object_detection_utils as obj_detect_utils
-#import torch as th
-#th.autograd.set_detect_anomaly(True)
 
 class TinySSDBaseFace(nn.Module):
     """

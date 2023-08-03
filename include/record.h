@@ -35,7 +35,6 @@
 #define _RECORD_H_
 
 #define EMBEDDING_SIZE 64
-#define DEFAULT_EMBS_NUM 48 // TODO: Update the logic to implement this
 
 #define SHOW_START_X (TFT_WIDTH - HEIGHT_ID)/2
 #define SHOW_START_Y (TFT_HEIGHT - WIDTH_ID)/2

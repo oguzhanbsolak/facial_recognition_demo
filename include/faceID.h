@@ -50,8 +50,8 @@
 
 #define FRAME_ORANGE 0xFD20
 
-#define MAX_X_OFFSET	23 //(IMAGE_H - WIDTH)/2 // 24 pixels
-#define MAX_Y_OFFSET	31 //(IMAGE_W - HEIGHT)/2 // 32 pixels
+#define MAX_X_OFFSET	23 //(WIDTH_DET - WIDTH)/2 // 24 pixels
+#define MAX_Y_OFFSET	31 //(HEIGHT_DET - HEIGHT)/2 // 32 pixels
 
 // Data input: HWC (little data): 160x120x3
 #define DATA_SIZE_IN_ID (112 * 112 * 3)

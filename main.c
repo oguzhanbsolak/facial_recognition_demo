@@ -59,6 +59,7 @@
 #include "MAXCAM_Debug.h"
 #include "facedetection.h"
 #include "post_process.h"
+#include "embeddings.h"
 #include "faceID.h"
 #include "record.h"
 #include "gpio.h"
@@ -78,6 +79,7 @@
 extern volatile uint8_t face_detected;
 volatile uint8_t record_mode = 0;
 volatile uint8_t capture_key = 0;
+volatile char names[1024][7];
 
 #if 0 // Custom camera settings
 static const uint8_t camera_settings[][2] = {
@@ -208,6 +210,13 @@ mxc_uart_regs_t* CommUart;
 unsigned int touch_x, touch_y;
 int font = (int)&SansSerif16x16[0];
 
+void init_names(){
+	char default_names[DEFAULT_EMBS_NUM][7] = DEFAULT_NAMES; 
+	for (int i = 0; i < DEFAULT_EMBS_NUM; i++){
+		strncpy((char*)names[i], default_names[i], 7);
+		
+	}
+}
 
 void gpio_isr(void *cbdata)
 {
@@ -286,6 +295,8 @@ int main(void)
   	cnn_3_load_bias(); // Load bias data of CNN_3
   	cnn_3_configure(); // Configure CNN_3 layers
 
+	//Initialize default names
+	init_names();
 	// Initialize Database from flash
 	init_cnn_from_flash();
 

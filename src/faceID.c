@@ -52,6 +52,7 @@
 #include "math.h"
 #include "post_process.h"
 #include "record.h"
+#include "embeddings.h"
 
 #define S_MODULE_NAME "faceid"
 
