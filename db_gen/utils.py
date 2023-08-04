@@ -122,8 +122,9 @@ def append_db_file_from_path(folder_path, face_detector, ai85_adapter):
                 if img.shape == (112, 112, 3):
 
                     current_embedding = ai85_adapter.get_network_out(img)[:, :, 0, 0]                    
-                    current_embedding = current_embedding * 128 * output_shift #convert back to 8 bits after normalization                    
-                    current_embedding[current_embedding < 0] += 256                    
+                    current_embedding = current_embedding * 128 * output_shift #convert back to 8 bits after normalization
+                    current_embedding = np.clip(current_embedding, -128, 127)  #clamp if embedding > 0.5 or < -0.5 as shift = 2                                      
+                    current_embedding[current_embedding < 0] += 256 # Convert negatives to uint
                     current_embedding = np.around(current_embedding).astype(np.uint8).flatten()
 
                     emb_array[emb_id,:] = current_embedding
@@ -176,15 +177,13 @@ def get_face_image(img, face_detector, min_prob=0.25):
 
     return None
 
-
-def create_weights_include_file(emb_array):
-    """
-    Create weights_3.h file from embeddings
-    """
-    Embedding_dimension = 64
-    weights_h_path = 'include\weights_3.h'
-
-    baseaddrs= ["0x51401f40", "0x51421f40", "0x51441f40", "0x51461f40", "0x51481f40", "0x514a1f40", "0x514c1f40", "0x514e1f40",
+def create_baseaddr_include_file(baseaddr_h_path):
+    
+    data_arr = []
+    data_line = []
+    
+    
+    baseaddr= ["0x51401f40", "0x51421f40", "0x51441f40", "0x51461f40", "0x51481f40", "0x514a1f40", "0x514c1f40", "0x514e1f40",
         "0x51501f40", "0x51521f40", "0x51541f40", "0x51561f40", "0x51581f40", "0x515a1f40", "0x515c1f40", "0x515e1f40",
         "0x52401f40", "0x52421f40", "0x52441f40", "0x52461f40", "0x52481f40", "0x524a1f40", "0x524c1f40", "0x524e1f40",
         "0x52501f40", "0x52521f40", "0x52541f40", "0x52561f40", "0x52581f40", "0x525a1f40", "0x525c1f40", "0x525e1f40",
@@ -192,6 +191,30 @@ def create_weights_include_file(emb_array):
         "0x53501f40", "0x53521f40", "0x53541f40", "0x53561f40", "0x53581f40", "0x535a1f40", "0x535c1f40", "0x535e1f40",
         "0x54401f40", "0x54421f40", "0x54441f40", "0x54461f40", "0x54481f40", "0x544a1f40", "0x544c1f40", "0x544e1f40",
         "0x54501f40", "0x54521f40", "0x54541f40", "0x54561f40", "0x54581f40", "0x545a1f40", "0x545c1f40", "0x545e1f40"]
+    
+    with open(baseaddr_h_path, 'w') as h_file:
+        h_file.write('#define BASEADDR { \\\n  ')
+        for base in baseaddr:
+            data_line.append(base)
+            if (len(data_line) % 8) == 0:
+                data_arr.append(', '.join(data_line))
+                data_line.clear()
+
+        data_arr.append(', '.join(data_line))
+        data = ', \\\n  '.join(data_arr)
+        h_file.write(data)
+        h_file.write(' \\\n}')
+        h_file.write('\n')
+    
+    return baseaddr
+
+def create_weights_include_file(emb_array, weights_h_path, baseaddr):
+    """
+    Create weights_3.h file from embeddings
+    """
+    Embedding_dimension = 64
+
+    
     length = "0x00000101"
     data_arr = []
     data_line = []
@@ -214,7 +237,7 @@ def create_weights_include_file(emb_array):
 
                 if (i + 1) % 4 == 0:
                     if not init_proccessor:
-                        data_line.append(baseaddrs[dim])
+                        data_line.append(baseaddr[dim])
                         if (len(data_line) % 8) == 0:
                             data_arr.append(', '.join(data_line))
                             data_line.clear()
@@ -238,11 +261,10 @@ def create_weights_include_file(emb_array):
         h_file.write(' \\\n}')
         h_file.write('\n')
 
-def create_embeddings_include_file(recorded_subjects):
+def create_embeddings_include_file(recorded_subjects, embeddings_h_path):
     data_arr = []
     data_line = []
 
-    embeddings_h_path = 'include\embeddings.h'
     with open(embeddings_h_path, 'w') as h_file:        
         h_file.write('#define DEFAULT_EMBS_NUM ' + str(len(recorded_subjects)) + ' \n')
         h_file.write('\n')

@@ -41,7 +41,7 @@ import os.path as path
 from ai85.ai85_adapter import AI85SimulatorAdapter
 from ai85.ai85_facedet_adapter import Facedet_AI85SimulatorAdapter
 
-from utils import append_db_file_from_path, create_weights_include_file, create_embeddings_include_file
+from utils import append_db_file_from_path, create_weights_include_file, create_embeddings_include_file, create_baseaddr_include_file
 
 CURRENT_DIR = path.abspath(path.dirname(path.abspath(__file__)))
 MODEL_PATH = path.join(CURRENT_DIR, 'model', 'mobilefacenet_112_qat_best-q.pth.tar')
@@ -65,8 +65,10 @@ def create_db_from_folder(args):
         print(f'Cannot create a DB file. No face could be detected from the images in folder ',
               f'`{args.db}`')
         return
-    create_weights_include_file(emb_array)
-    create_embeddings_include_file(recorded_subject)
+
+    baseaddr = create_baseaddr_include_file(args.base)
+    create_weights_include_file(emb_array, args.weights, baseaddr)
+    create_embeddings_include_file(recorded_subject, args.emb)
     print(f'Created weights_3.h and embeddings.h files from {len(recorded_subject)} images.')
 
 
@@ -77,6 +79,12 @@ def parse_arguments():
     parser = argparse.ArgumentParser(description='Create embedding database file.')
     parser.add_argument('--db', '-db-path', type=str, default='db',
                         help='path for face images')
+    parser.add_argument('--base', '-base-path', type=str, default='include\\baseaddr.h',
+                        help='path for baseaddr header file')
+    parser.add_argument('--emb', '-emb-path', type=str, default='include\embeddings.h',
+                        help='path for embeddings header file')
+    parser.add_argument('--weights', '-weights-path', type=str, default='include\weights_3.h',
+                        help='path for weights header file')
 
     args = parser.parse_args()
     return args
