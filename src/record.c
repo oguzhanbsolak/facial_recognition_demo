@@ -64,9 +64,9 @@
 
 
 /***** Definitions *****/
-#define DB_ADDRESS (MXC_FLASH_MEM_BASE + MXC_FLASH_MEM_SIZE) - (1 * MXC_FLASH_PAGE_SIZE)
+#define DB_ADDRESS (MXC_FLASH_MEM_BASE + MXC_FLASH_MEM_SIZE) - (5 * MXC_FLASH_PAGE_SIZE) // Max Flash use 72 * 1024 bytes, 5 pages of 16KB each are used for the database
 
-#define STATUS_ADDRESS (MXC_FLASH_MEM_BASE + MXC_FLASH_MEM_SIZE) - (2 * MXC_FLASH_PAGE_SIZE)
+#define STATUS_ADDRESS (MXC_FLASH_MEM_BASE + MXC_FLASH_MEM_SIZE) - (6 * MXC_FLASH_PAGE_SIZE) // Status is updated regularly, so we use a dedicated page for it
 /*
     ^ Points to last page in flash, which is guaranteed to be unused by this small example.
     For larger applications it's recommended to reserve a dedicated flash region by creating
@@ -502,10 +502,11 @@ int init_db()
 
 int err = 0;
  printf("Erasing page 64 of flash (addr 0x%x)...\n", DB_ADDRESS);
-            err = MXC_FLC_PageErase(DB_ADDRESS);
-            if (err) {
-            printf("Failed with error code %i\n", DB_ADDRESS, err);
-            return err; }
+            for (int i = 0; i < 5; i++) {
+            err = MXC_FLC_PageErase(DB_ADDRESS + (i * MXC_FLASH_PAGE_SIZE)); // Erase 5 pages
+                if (err) {
+                printf("Failed with error code %i\n", DB_ADDRESS, err);
+                return err; }}
 
             PR_DEBUG("Magic Value not matched, Initializing flash\n");
             err = MXC_FLC_Write32(DB_ADDRESS, MAGIC);
@@ -1021,6 +1022,10 @@ int record()
     get_status(pptr);
     PR_DEBUG("Latest ID: %d\n", pptr->id);
     PR_DEBUG("Total embeddings: %d\n", pptr->db_embeddings_count);
+    if (pptr->db_embeddings_count == 1024) {
+        printf("Database full, can't add more persons\n");
+        return -1;
+    }
 
     err = add_person(pptr);
     if (err == -1) { // error code -1 means return to main menu
