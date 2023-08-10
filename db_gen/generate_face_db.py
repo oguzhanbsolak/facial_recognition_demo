@@ -69,7 +69,7 @@ def create_db_from_folder(args):
     baseaddr = create_baseaddr_include_file(args.base)
     create_weights_include_file(emb_array, args.weights, baseaddr)
     create_embeddings_include_file(recorded_subject, args.emb)
-    print(f'Created weights_3.h and embeddings.h files from {len(recorded_subject)} images.')
+    print(f'Created weights and embeddings files from {len(recorded_subject)} images.')
 
 
 def parse_arguments():

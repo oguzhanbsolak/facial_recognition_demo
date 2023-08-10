@@ -213,53 +213,72 @@ def create_weights_include_file(emb_array, weights_h_path, baseaddr):
     Create weights_3.h file from embeddings
     """
     Embedding_dimension = 64
+    extension = os.path.splitext(weights_h_path)[1]
 
     
     length = "0x00000101"
     data_arr = []
     data_line = []
-    four_byte = []
     
     
-    with open(weights_h_path, 'w') as h_file:
-        h_file.write('#define KERNELS_3 { \\\n  ')
-        for dim in range(Embedding_dimension):
-            init_proccessor = False
-            for i in range(emb_array.shape[0] + 4): # nearest %9 == 0 for 1024 is 1027, it can be kept in 1028 bytes TODO: Change this from Hardcoded
-                reindex = i + 8 - 2*(i%9)
-                if reindex < 1024: # Total emb count is 1024, last index 1023
-                    single_byte = str(format(emb_array[reindex][dim], 'x')) #Relocate emb for cnn kernel
-                else:
-                    single_byte = str(format(0, 'x'))
-                if len(single_byte) == 1:
-                    single_byte = '0' + single_byte
-                four_byte.append(single_byte)
+    if extension == '.h':
+        with open(weights_h_path, 'w') as h_file:
+            four_byte = []
+            h_file.write('#define KERNELS_3 { \\\n  ')
+            for dim in range(Embedding_dimension):
+                init_proccessor = False
+                for i in range(emb_array.shape[0] + 4): # nearest %9 == 0 for 1024 is 1027, it can be kept in 1028 bytes TODO: Change this from Hardcoded
+                    reindex = i + 8 - 2*(i%9)
+                    if reindex < 1024: # Total emb count is 1024, last index 1023
+                        single_byte = str(format(emb_array[reindex][dim], 'x')) #Relocate emb for cnn kernel
+                    else:
+                        single_byte = str(format(0, 'x'))
+                    if len(single_byte) == 1:
+                        single_byte = '0' + single_byte
+                    four_byte.append(single_byte)
 
-                if (i + 1) % 4 == 0:
-                    if not init_proccessor:
-                        data_line.append(baseaddr[dim])
+                    if (i + 1) % 4 == 0:
+                        if not init_proccessor:
+                            data_line.append(baseaddr[dim])
+                            if (len(data_line) % 8) == 0:
+                                data_arr.append(', '.join(data_line))
+                                data_line.clear()
+                            data_line.append(length)
+                            if (len(data_line) % 8) == 0:
+                                data_arr.append(', '.join(data_line))
+                                data_line.clear()
+                            init_proccessor = True
+                        data_32 = '0x'+''.join(four_byte)
+
+                        data_line.append(data_32)
+                        four_byte.clear()
                         if (len(data_line) % 8) == 0:
                             data_arr.append(', '.join(data_line))
                             data_line.clear()
-                        data_line.append(length)
-                        if (len(data_line) % 8) == 0:
-                            data_arr.append(', '.join(data_line))
-                            data_line.clear()
-                        init_proccessor = True
-                    data_32 = '0x'+''.join(four_byte)
-
-                    data_line.append(data_32)
-                    four_byte.clear()
-                    if (len(data_line) % 8) == 0:
-                        data_arr.append(', '.join(data_line))
-                        data_line.clear()
         
-        data_arr.append(', '.join(data_line))
-        data = ', \\\n  '.join(data_arr)
-        h_file.write(data)
-        h_file.write('0x00000000') #TODO: CHECK THE SOURCE OF THE LAST 0x00000000, PS: Might be due to addr matching while loading weights at c side
-        h_file.write(' \\\n}')
-        h_file.write('\n')
+            data_arr.append(', '.join(data_line))
+            data = ', \\\n  '.join(data_arr)
+            h_file.write(data)
+            h_file.write('0x00000000') #TODO: CHECK THE SOURCE OF THE LAST 0x00000000, PS: Might be due to addr matching while loading weights at c side
+            h_file.write(' \\\n}')
+            h_file.write('\n')
+
+    elif extension == '.bin':
+        with open(weights_h_path, 'wb') as h_file:
+            four_byte = 0
+            data_arr = bytearray(np.uint8([data_arr]))
+            for dim in range(Embedding_dimension):
+                for i in range(emb_array.shape[0] + 4): # nearest %9 == 0 for 1024 is 1027, it can be kept in 1028 bytes TODO: Change this from Hardcoded
+                    reindex = i + 8 - 2*(i%9)
+                    if reindex < 1024: # Total emb count is 1024, last index 1023
+                        single_byte = int(emb_array[reindex][dim])  #Relocate emb for cnn kernel                        
+                    else:
+                        single_byte = 0
+                    four_byte = four_byte << 8 | single_byte
+                    if (i + 1) % 4 == 0:
+                        data_arr.extend(four_byte.to_bytes(4, 'little', signed=False))
+                        four_byte = 0
+            h_file.write(data_arr)
 
 def create_embeddings_include_file(recorded_subjects, embeddings_h_path):
     data_arr = []
